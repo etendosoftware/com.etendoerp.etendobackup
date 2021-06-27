@@ -1,0 +1,25 @@
+plugins {
+    id 'groovy'
+    id 'groovy-gradle-plugin'
+}
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+dependencies {
+    compile     gradleApi()
+    testCompile gradleTestKit()
+    testCompile 'junit:junit:4+'
+    compile 'com.sun.mail:javax.mail:1.6.0'
+}
+
+gradlePlugin {
+    plugins {
+        etendoBackupPlugin {
+            id = "com.smf.etendobackup"
+            implementationClass = "com.smf.EtendoBackupPlugin"
+        }
+    }
+}
