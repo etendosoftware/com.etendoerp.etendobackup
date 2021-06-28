@@ -19,38 +19,114 @@ class BackupModule {
 
         def extension = project.extensions.create("backup", BackupPluginExtension)
 
-        this.log = Logger.getLogger(project)
-        this.commandLine = CommandLine.getCommandLine(project)
+        log = Logger.getLogger(project)
+        commandLine = CommandLine.getCommandLine(project)
         this.project = project
 
-        project.ext.logFile = this.logFile
+        project.ext.extFileTolog = logFile
+
+        project.ext.setProperty("tmpBackupDir", null)
+        project.ext.setProperty("finalBkpDir", null)
+        project.ext.setProperty("confProperties", null)
+        project.ext.setProperty("bkpDate", null)
+        project.ext.setProperty("etendoConf", [:])
 
         project.gradle.taskGraph.afterTask { Task task, TaskState state ->
             if (task.name.startsWith("backup")) {
                 if (state.failure) {
                     Throwable throwable = state.failure
                     def failureMessage ="Error on $task "
-                    this.log.logToFile(LogLevel.ERROR, failureMessage, this.logFile, throwable)
+                    log.logToFile(LogLevel.ERROR, failureMessage, project.findProperty("extFileToLog") as File, throwable)
                 }
             }
         }
 
-        // Test task
-        project.task("backupEtendoExtension") {
+        // Load compress sources tasks
+        BackupCompressSourcesTask.load(project)
+
+        // Load compress external attachments tasks
+        BackupCompressExternalAttachmentsTask.load(project)
+
+        // Load database fix script tasks
+        BackupDatabaseFixScriptTask.load(project)
+
+        // Load database dump tasks
+        BackupDatabaseDumpTask.load(project)
+
+        // Load compress database dump tasks
+        BackupCompressDatabaseDumpTask.load(project)
+
+        // Load compress webapp tasks
+        BackupCompressWebappTask.load(project)
+
+        // backup task
+
+        project.tasks.register("backupConfig") {
             doLast {
-                String configPath = extension.configPath.get() ?: "undefined"
-                println "Config path: ${configPath}"
-                // Command line Test
-                def (exit, out) = commandLine.run(false,"find", "...")
-                log.logToFile(LogLevel.INFO, "Output ls: ${out.toString()}")
+                BackupUtils.loadBackupConfigurations(project)
+                BackupUtils.loadConfigurationProperties(project)
+                def tmpDir = BackupUtils.generateTmpDir(project)
+                def bkpDir = BackupUtils.generateBackupDir(project)
+
+                // Configure 'backup' task from another task to prevent 'Eagerly' configuration
+                Task backup = project.tasks.named("backup").get() as Tar
+
+                def backupName = "backup-${project.ext.get("bkpDate")}.tar.gz"
+                project.ext.setProperty("backupName", backupName)
+                backup.archiveFileName.set(backupName)
+
+                backup.destinationDirectory.set(bkpDir)
+                backup.from(project.file(tmpDir))
+
             }
         }
 
-        project.task("etendoBackup") {
+        project.tasks.register("backupDeleteTmpFolder") {
             doLast {
-                println "Etendo backup is running..."
+                if ( project.ext.has("tmpBackupDir") && project.ext.get("tmpBackupDir") != null) {
+                    log.logToFile(LogLevel.INFO, "Deleting tmp folder", project.findProperty("extFileToLog") as File)
+                    project.delete("${(project.ext.get("tmpBackupDir") as File).absolutePath}")
+                }
+            }
+        }
+
+        project.tasks.register("backup", Tar) {
+            try {
+                def taskDep = BackupUtils.generateTaskDep(project)
+                dependsOn "backupConfig"
+                dependsOn (taskDep)
+                compression = Compression.GZIP
+                finalizedBy project.tasks.named("backupDeleteTmpFolder")
+            } catch (Exception e) {
+                log.logToFile(LogLevel.ERROR, "Error on backup Configuration", project.findProperty("extFileToLog") as File, e)
+                throw e
+            }
+
+            doFirst {
+                log.logToFile(LogLevel.INFO, "Calculating sha1 checksums", project.findProperty("extFileToLog") as File)
+                File tmpDir = project.ext.getProperty("tmpBackupDir") as File
+                commandLine.run("sh","-c",""" cd ${tmpDir.absolutePath} && sha1sum * > sha1""")
+                log.logToFile(LogLevel.INFO, "Creating the backup file", project.findProperty("extFileToLog") as File)
+            }
+
+            doLast {
+                def folderName = (destinationDirectory as DirectoryProperty).get().asFile.absolutePath
+                log.logToFile(LogLevel.INFO, "Backup done: ${folderName}/${archiveFileName.get()} Created ", project.findProperty("extFileToLog") as File)
+
+                // Sync and rotation
+
+                // Rotation
+                def mode = project.findProperty("bkpMode")
+                def rotationEnabled = project.findProperty("etendoConf")?.ROTATION_ENABLED
+                if (mode == "auto" && rotationEnabled == "yes" ) {
+                    BackupUtils.runRotation(project)
+                }
+
+                // TODO: move log files to the final backup folder
+
+                log.logToFile(LogLevel.INFO, "Backup Finalized", project.findProperty("extFileToLog") as File)
+                project.ext.set("checker", "finalized")
             }
         }
     }
-
 }

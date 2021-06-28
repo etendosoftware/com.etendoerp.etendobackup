@@ -40,7 +40,7 @@ class CommandLine {
             if (!ignoreStderr) {
                 throw new IllegalStateException(errMsg)
             }
-            log.logToFile(LogLevel.WARN, errMsg, this.project.findProperty("logFile"))
+            log.logToFile(LogLevel.WARN, errMsg, this.project.findProperty("extFileTolog") as File)
         }
         return [result.getExitValue(), output]
     }

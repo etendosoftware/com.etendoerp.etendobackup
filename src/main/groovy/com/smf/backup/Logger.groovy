@@ -20,8 +20,47 @@ class Logger {
     }
 
     def logToFile(LogLevel logLevel, String message, File log = null, Throwable throwable = null, Boolean printStackTrace = false) {
-        def msg = "${logLevel.toString()} - ${getCurrentDate()} * ${message} \n"
-        project.logger.log(logLevel, msg)
+        try {
+            def msg = "${logLevel.toString()} - ${getCurrentDate()} * ${message} \n"
+            project.logger.log(logLevel, msg)
+
+            if (throwable) {
+                def cause = throwable.getCause() ?: throwable
+                msg += "Cause: ${cause?.toString()}\n"
+                if (printStackTrace) {
+                    StringWriter sw = new StringWriter();
+                    throwable.printStackTrace(new PrintWriter(sw));
+                    String exceptionAsString = sw.toString();
+                    msg += "Stacktrace: \n" + "${exceptionAsString}" + "\n"
+                }
+            }
+
+            if (log) {
+                log << msg
+            }
+
+            return msg
+        } catch (Exception e) {
+            logLevel = LogLevel.ERROR
+            def msg = "${logLevel.toString()} - ${getCurrentDate()} * ${e.getMessage()} \n"
+            project.logger.info(msg)
+            if (log) {
+                log << msg
+            }
+            throw e
+        } finally {
+
+            // TODO: delete tmp folder and current backup if exists
+            if (logLevel == LogLevel.ERROR) {
+                def mode = project.findProperty("bkpMode")
+                if (mode == "auto" && log && !project.findProperty("emailSended")) {
+                    project.ext.setProperty("emailSended", true)
+                    // TODO: Send email with the logs sendLogToMail(log)
+
+                }
+            }
+        }
+
     }
 
     def getCurrentDate() {
