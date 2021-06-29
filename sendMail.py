@@ -9,7 +9,7 @@ from email.MIMEText import MIMEText
 
 # CONFIGURATION VARIABLES:
 mailfrom = os.getenv('EMAIL_FROM', 'il2@smfconsulting.es')
-mailto   = os.getenv('EMAIL_TO', 'staff@smfconsulting.es')
+mailto   = os.getenv('EMAIL_TO', ' ') #staff@smfconsulting.es
 server   = os.getenv('EMAIL_SERVER', 'smtp.gmail.com')
 port     = os.getenv('EMAIL_PORT', '587')
 tls      = os.getenv('EMAIL_TLS', True)
