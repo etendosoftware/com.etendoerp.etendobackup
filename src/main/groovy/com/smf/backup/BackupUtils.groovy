@@ -133,7 +133,7 @@ class BackupUtils {
         tmpMap.put("db_syspass"   , opb_props.getProperty("bbdd.systemPassword", "syspass"))
         tmpMap.put("context_name" , opb_props.getProperty("context.name", "etendo"))
         tmpMap.put("attach_path"  , opb_props.getProperty("attach.path", ""))
-        //extLogToFile(LogLevel.INFO, "Database properties: ${tmpMap.toString()}\n", project.findProperty("extFileToLog"))
+
         log.logToFile(LogLevel.INFO, "Configuration properties: \n" +
                 " * db_login     ${tmpMap.db_login} \n" +
                 " * db_pass      ${tmpMap.db_pass} \n" +
