@@ -74,7 +74,6 @@ class BackupModule {
                 def backupName = "backup-${project.ext.get("bkpDate")}.tar.gz"
                 project.ext.setProperty("backupName", backupName)
                 backup.archiveFileName.set(backupName)
-
                 backup.destinationDirectory.set(bkpDir)
                 backup.from(project.file(tmpDir))
 

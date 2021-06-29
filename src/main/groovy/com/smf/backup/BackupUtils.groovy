@@ -5,13 +5,16 @@ import org.gradle.api.logging.LogLevel
 
 class BackupUtils {
 
+    final static String DEFAULT_USER  = "futit"
+    final static String DEFAULT_GROUP = "futit"
+
     static loadBackupConfigurations(Project project) {
         Logger log = Logger.getLogger(project)
         try {
 
             CommandLine commandLine = CommandLine.getCommandLine(project)
 
-            loadEtendoBackupConf(project)
+            def etendoConf = loadEtendoBackupConf(project)
 
             def confPath = project.extensions.getByName("backup").configPath.get()
 
@@ -23,10 +26,12 @@ class BackupUtils {
                 project.setProperty("bkpDate", date)
             }
 
-            // Create file to log (in tmp folder)
-            // TODO: Select location from the conf file
+            // Create file to log in a selected location
+            // User should have permissions to create the backup log file
             if (!project.ext.has("extFileToLog") || project.ext.get("extFileToLog") == null) {
-                File logFile = project.file("backups-logs-${date}.txt")
+                def tmpLogLocation = (etendoConf?.EMAIL_TEMP_FILE as String).replace(".txt","")
+                tmpLogLocation = tmpLogLocation.concat("-${date}.txt")
+                File logFile = project.file(tmpLogLocation)
                 project.ext.set("extFileToLog", logFile)
             }
 
@@ -36,7 +41,7 @@ class BackupUtils {
             // Get private IP
             (exit, output) = commandLine.run("hostname","-I")
             if (exit == 0) {
-                log.logToFile(LogLevel.INFO, "Private IP: ${output}", project.findProperty("extFileToLog") as File)
+                log.logToFile(LogLevel.INFO, "Private IP: ${output.replace("\n","")}", project.findProperty("extFileToLog") as File)
             }
 
             // Get public IP
@@ -56,10 +61,10 @@ class BackupUtils {
 
             log.logToFile(LogLevel.INFO, "Backup mode: ${mode}", project.findProperty("extFileToLog") as File)
 
-            // TODO: change user:group, add it to the conf file
+            def user = etendoConf?.USER ?: DEFAULT_USER
             (exit, output) = commandLine.run(false, "id","-u","-n")
             if (exit == 0) {
-                if (output.replace("\n","") != "futit") {
+                if (output.replace("\n","") != user) {
                     throw new IllegalArgumentException("You need to run this as openbravo user. Actual user: ${output}")
                 }
             }
@@ -154,12 +159,14 @@ class BackupUtils {
         log.logToFile(LogLevel.INFO, "Starting creation of tmp backup dir", project.findProperty("extFileToLog") as File)
         File tmpDir = File.createTempDir()
 
-        // TODO: change user:group, add it to the conf file
-        def bkpTmpDir = project.findProperty("etendoConf")?.BACKUPS_TMP_DIR
+        def etendoConf = loadEtendoBackupConf(project)
+        def user  = etendoConf?.USER ?: DEFAULT_USER
+        def group = etendoConf?.GROUP ?: DEFAULT_GROUP
+        def bkpTmpDir = etendoConf?.BACKUPS_TMP_DIR
         if (bkpTmpDir) {
             def tmpDirPath = "${bkpTmpDir}/${tmpDir.name}"
             commandLine.run(false, "mkdir","-p", tmpDirPath)
-            commandLine.run(false,"sudo","chown","futit:futit",tmpDirPath)
+            commandLine.run(false,"sudo","chown","${user}:${group}",tmpDirPath)
             tmpDir = project.file(tmpDirPath)
         }
 
@@ -208,7 +215,7 @@ class BackupUtils {
                 "backupCompressSourcesTar",
                 "backupCompressDatabaseDump",
                 "backupCompressExternalAttachments"
-        ]
+            ]
 
         if (project.hasProperty("skipSources")) {
             log.logToFile(LogLevel.INFO, "Skipping sources", project.findProperty("extFileToLog") as File)
@@ -220,16 +227,9 @@ class BackupUtils {
             deps.remove("backupCompressDatabaseDump")
         }
 
-        // TODO: see if include webapp folder from conf file or Project properties (command line)
         if (project.hasProperty("includeWebapp")) {
-            log.logToFile(LogLevel.INFO, "Including webapp", project.findProperty("extFileToLog") as File)
+            log.logToFile(LogLevel.INFO, "Including webapp folder", project.findProperty("extFileToLog") as File)
             deps.add("backupCompressWebapp")
-        }
-
-        def attachPath = project.findProperty("confProperties")?.attach_path
-        def attachCopy = project.findProperty("etendoConf")?.ATTACH_COPY
-        if (attachCopy == "yes" && attachPath != "${project.rootDir.absolutePath}/attachments") {
-            deps.add("backupCompressExternalAttachments")
         }
 
         return deps
@@ -289,5 +289,41 @@ class BackupUtils {
         }
     }
 
+    static handleError(Project project, File logFile = null) {
+        try {
+            // Delete tmp folder and current backup if exists
+            def tmpBackupDir = project.findProperty("tmpBackupDir")
+            if (tmpBackupDir) {
+                tmpBackupDir = project.file(tmpBackupDir)
+                if (tmpBackupDir.exists()) {
+                    project.logger.info("Deleting tmp dir: ${tmpBackupDir.absolutePath}")
+                    project.delete(tmpBackupDir)
+                }
+            }
+
+            def backupName = project.findProperty("backupName")
+            def finalBkpDir = project.findProperty("finalBkpDir")
+
+            if (finalBkpDir && backupName) {
+                finalBkpDir = project.file(finalBkpDir)
+                def backupFile = project.file("${finalBkpDir.absolutePath}/${backupName}")
+                if (backupFile.exists()) {
+                    project.logger.info("Deleting backup file: ${backupFile.absolutePath}")
+                    project.delete(backupFile)
+                }
+            }
+
+        } catch (Exception e) {
+            project.logger.info("Error deleting tmp/backup file \n ${e.printStackTrace()}")
+            throw e
+        } finally {
+            def mode = project.findProperty("bkpMode")
+            if (mode == "auto" && logFile && !project.findProperty("emailIsSending")) {
+                project.ext.setProperty("emailIsSending", true)
+                EmailSender emailSender = new EmailSender(project)
+                emailSender.sendLogToMail(project.file(logFile))
+            }
+        }
+    }
 
 }

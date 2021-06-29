@@ -49,18 +49,11 @@ class Logger {
             }
             throw e
         } finally {
-
-            // TODO: delete tmp folder and current backup if exists
-            if (logLevel == LogLevel.ERROR) {
-                def mode = project.findProperty("bkpMode")
-                if (mode == "auto" && log && !project.findProperty("emailSended")) {
-                    project.ext.setProperty("emailSended", true)
-                    // TODO: Send email with the logs sendLogToMail(log)
-
-                }
+            if (logLevel == LogLevel.ERROR && !project.findProperty("errorHandled")) {
+                project.ext.setProperty("errorHandled", true)
+                BackupUtils.handleError(project, log)
             }
         }
-
     }
 
     def getCurrentDate() {
