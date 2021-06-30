@@ -10,73 +10,67 @@ class BackupUtils {
 
     static loadBackupConfigurations(Project project) {
         Logger log = Logger.getLogger(project)
-        try {
 
-            CommandLine commandLine = CommandLine.getCommandLine(project)
+        CommandLine commandLine = CommandLine.getCommandLine(project)
 
-            def etendoConf = loadEtendoBackupConf(project)
+        def etendoConf = loadEtendoBackupConf(project)
 
-            def confPath = project.extensions.getByName("backup").configPath.get()
+        def confPath = project.extensions.getByName("backup").configPath.get()
 
-            // Set backup DATE, original to the script format
-            def date = "nodate"
-            def (exit, output) = commandLine.run("date", "-u", '+"%Y%m%d-%H%M-%Z"')
-            if (exit == 0) {
-                date = output.replace("\"","").replace("\n","")
-                project.setProperty("bkpDate", date)
+        // Set backup DATE, original to the script format
+        def date = "nodate"
+        def (exit, output) = commandLine.run("date", "-u", '+"%Y%m%d-%H%M-%Z"')
+        if (exit == 0) {
+            date = output.replace("\"","").replace("\n","")
+            project.setProperty("bkpDate", date)
+        }
+
+        // Create file to log in a selected location
+        // User should have permissions to create the backup log file
+        if (!project.ext.has("extFileToLog") || project.ext.get("extFileToLog") == null) {
+            def tmpLogLocation = (etendoConf?.EMAIL_TEMP_FILE as String).replace(".txt","")
+            tmpLogLocation = tmpLogLocation.concat("-${date}.txt")
+            File logFile = project.file(tmpLogLocation)
+            project.ext.set("extFileToLog", logFile)
+        }
+
+        log.logToFile(LogLevel.INFO, "Starting backup configuration", project.findProperty("extFileToLog") as File)
+        log.logToFile(LogLevel.INFO, "Configuration properties: ${confPath}", project.findProperty("extFileToLog") as File)
+
+        // Get private IP
+        (exit, output) = commandLine.run("hostname","-I")
+        if (exit == 0) {
+            log.logToFile(LogLevel.INFO, "Private IP: ${output.replace("\n","")}", project.findProperty("extFileToLog") as File)
+        }
+
+        // Get public IP
+        (exit, output) = commandLine.run("wget","-qO-","ifconfig.me")
+        if (exit == 0) {
+            log.logToFile(LogLevel.INFO, "Public IP: ${output}", project.findProperty("extFileToLog") as File)
+        }
+
+        // Configure Mode
+        def mode = project.findProperty("bkpMode")
+        if (mode != "auto" && mode != "manual") {
+            throw new IllegalArgumentException(
+                    "Invalid backup mode ${mode?.toString()}, valid options: auto , manual. \n" +
+                            "Provide a correct bkpMode property or -PbkpMode flag. Ex -PbkpMode=manual"
+            )
+        }
+
+        log.logToFile(LogLevel.INFO, "Backup mode: ${mode}", project.findProperty("extFileToLog") as File)
+
+        def user = etendoConf?.USER ?: DEFAULT_USER
+        (exit, output) = commandLine.run(false, "id","-u","-n")
+        if (exit == 0) {
+            if (output.replace("\n","") != user) {
+                throw new IllegalArgumentException("You need to run this as openbravo user. Actual user: ${output}")
             }
+        }
 
-            // Create file to log in a selected location
-            // User should have permissions to create the backup log file
-            if (!project.ext.has("extFileToLog") || project.ext.get("extFileToLog") == null) {
-                def tmpLogLocation = (etendoConf?.EMAIL_TEMP_FILE as String).replace(".txt","")
-                tmpLogLocation = tmpLogLocation.concat("-${date}.txt")
-                File logFile = project.file(tmpLogLocation)
-                project.ext.set("extFileToLog", logFile)
-            }
-
-            log.logToFile(LogLevel.INFO, "Starting backup configuration", project.findProperty("extFileToLog") as File)
-            log.logToFile(LogLevel.INFO, "Configuration properties: ${confPath}", project.findProperty("extFileToLog") as File)
-
-            // Get private IP
-            (exit, output) = commandLine.run("hostname","-I")
-            if (exit == 0) {
-                log.logToFile(LogLevel.INFO, "Private IP: ${output.replace("\n","")}", project.findProperty("extFileToLog") as File)
-            }
-
-            // Get public IP
-            (exit, output) = commandLine.run("wget","-qO-","ifconfig.me")
-            if (exit == 0) {
-                log.logToFile(LogLevel.INFO, "Public IP: ${output}", project.findProperty("extFileToLog") as File)
-            }
-
-            // Configure Mode
-            def mode = project.findProperty("bkpMode")
-            if (mode != "auto" && mode != "manual") {
-                throw new IllegalArgumentException(
-                        "Invalid backup mode ${mode?.toString()}, valid options: auto , manual. \n" +
-                                "Provide a correct bkpMode property or -PbkpMode flag. Ex -PbkpMode=manual"
-                )
-            }
-
-            log.logToFile(LogLevel.INFO, "Backup mode: ${mode}", project.findProperty("extFileToLog") as File)
-
-            def user = etendoConf?.USER ?: DEFAULT_USER
-            (exit, output) = commandLine.run(false, "id","-u","-n")
-            if (exit == 0) {
-                if (output.replace("\n","") != user) {
-                    throw new IllegalArgumentException("You need to run this as openbravo user. Actual user: ${output}")
-                }
-            }
-
-            def bkpEnabled = project.findProperty("etendoConf")?.BACKUP_ENABLED
-            if (bkpEnabled != "yes") {
-                throw new IllegalArgumentException("Backup NOT done. Please enable and configure the backup in ${confPath}")
-            }
-
-        } catch (Exception e) {
-            log.logToFile(LogLevel.ERROR, "Error on backup configuration")
-            throw e
+        def bkpEnabled = project.findProperty("etendoConf")?.BACKUP_ENABLED
+        if (bkpEnabled != "yes") {
+            throw new IllegalArgumentException("Backup NOT done. Please enable and configure the backup in ${confPath}")
         }
 
     }
@@ -246,7 +240,8 @@ class BackupUtils {
 
             if (!rotNumToMaintain || !rotNumToMaintain.isInteger() || rotNumToMaintain.toInteger() <= 0) {
                 log.logToFile(LogLevel.WARN,"Rotation NOT done", project.findProperty("extFileToLog") as File)
-                log.logToFile(LogLevel.WARN,"ROTATION_NUM_TO_MAINTAIN variable in /etc/openbravo-backup.conf must be a number greater than 0.", project.findProperty("extFileToLog") as File)
+                def confPath = project.extensions.getByName("backup").configPath.get()
+                log.logToFile(LogLevel.WARN,"ROTATION_NUM_TO_MAINTAIN variable in ${confPath} must be a number greater than 0.", project.findProperty("extFileToLog") as File)
                 return
             }
 
@@ -314,7 +309,7 @@ class BackupUtils {
             }
 
         } catch (Exception e) {
-            project.logger.info("Error deleting tmp/backup file \n ${e.printStackTrace()}")
+            project.logger.info("Error deleting tmp/backup file: ${e.getMessage()}")
             throw e
         } finally {
             def mode = project.findProperty("bkpMode")
