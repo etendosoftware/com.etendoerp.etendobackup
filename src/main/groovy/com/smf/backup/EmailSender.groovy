@@ -84,7 +84,7 @@ class EmailSender {
         def stdout = new ByteArrayOutputStream()
         def stderr = new ByteArrayOutputStream()
 
-        def subject = etendoConf?.EMAIL_SUBJECT ?: "Error en el Backup de Etendo. Entorno:"
+        def subject = etendoConf?.EMAIL_SUBJECT ?: "Etendo backup failed. Environment:"
         subject = subject.concat(" ${project.name} - Context name: ${confProps?.context_name ?: "undefined"}")
 
         def pythonScriptLocation = etendoConf?.EMAIL_PYTHON_LOCATION ?: PYTHON_EMAIL_PATH
@@ -127,7 +127,7 @@ class EmailSender {
 
             def from    = etendoConf?.EMAIL_FROM as String
             def to      = etendoConf?.EMAIL_TO as String
-            def subject = etendoConf?.EMAIL_SUBJECT ?: "Error en el Backup de Etendo. Entorno:"
+            def subject = etendoConf?.EMAIL_SUBJECT ?: "Etendo backup failed. Environment:"
             subject = subject.concat(" ${project.name} - Context name: ${confProps?.context_name ?: "undefined"}")
             def cc = (etendoConf?.EMAIL_CC as String)?.split(";")
 
