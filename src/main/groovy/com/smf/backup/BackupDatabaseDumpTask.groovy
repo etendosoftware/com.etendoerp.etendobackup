@@ -30,8 +30,7 @@ class BackupDatabaseDumpTask {
 
                 mustRunAfter = ["backupConfig", "backupCompressDatabaseDumpConfig"]
                 dependsOn ("backupDatabaseDumpExecConfig", "backupDatabaseDumpFixScript")
-
-                standardOutput = new ByteArrayOutputStream()
+                
                 errorOutput = new ByteArrayOutputStream()
                 ignoreExitValue true
             } catch (Exception e) {

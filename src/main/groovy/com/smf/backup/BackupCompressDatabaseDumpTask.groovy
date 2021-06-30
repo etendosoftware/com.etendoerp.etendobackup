@@ -8,7 +8,7 @@ import org.gradle.api.tasks.bundling.Tar
 
 class BackupCompressDatabaseDumpTask {
 
-    final static String DUMP_TAR_NAME = "db.dump"
+    final static String DUMP_TAR_NAME = "db-dump"
 
     static load(Project project) {
 
