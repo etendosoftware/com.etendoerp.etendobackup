@@ -1,4 +1,4 @@
-package com.smf.backup
+package com.etendoerp.backup
 
 import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
@@ -151,17 +151,21 @@ class BackupUtils {
         }
 
         log.logToFile(LogLevel.INFO, "Starting creation of tmp backup dir", project.findProperty("extFileToLog") as File)
-        File tmpDir = File.createTempDir()
+
+        File tmpDir
 
         def etendoConf = loadEtendoBackupConf(project)
         def user  = etendoConf?.USER ?: DEFAULT_USER
         def group = etendoConf?.GROUP ?: DEFAULT_GROUP
         def bkpTmpDir = etendoConf?.BACKUPS_TMP_DIR
         if (bkpTmpDir) {
-            def tmpDirPath = "${bkpTmpDir}/${tmpDir.name}"
+            def uuid = UUID.randomUUID().toString()
+            def tmpDirPath = "${bkpTmpDir}/backup-tmp-${uuid}"
             commandLine.run(false, "mkdir","-p", tmpDirPath)
             commandLine.run(false,"sudo","chown","${user}:${group}",tmpDirPath)
             tmpDir = project.file(tmpDirPath)
+        } else {
+            tmpDir = File.createTempDir()
         }
 
         project.ext.set("tmpBackupDir", tmpDir)
@@ -190,13 +194,18 @@ class BackupUtils {
 
         log.logToFile(LogLevel.INFO, "Creating backup dir: ${finalBackupDir}", project.findProperty("extFileToLog") as File)
 
+        def etendoConf = loadEtendoBackupConf(project)
+        def user  = etendoConf?.USER ?: DEFAULT_USER
+        def group = etendoConf?.GROUP ?: DEFAULT_GROUP
+
         commandLine.run(false,"sudo","mkdir","-p",baseBackupDir)
-        commandLine.run(false,"sudo","chown","futit:futit",baseBackupDir)
+        commandLine.run(false,"sudo","chown","${user}:${group}",baseBackupDir)
         commandLine.run(false,"sudo","mkdir","-p",finalBackupDir)
-        commandLine.run(false,"sudo","chown","futit:futit",finalBackupDir)
+        commandLine.run(false,"sudo","chown","${user}:${group}",finalBackupDir)
 
         log.logToFile(LogLevel.INFO, "Backup dir: ${finalBackupDir} created", project.findProperty("extFileToLog") as File)
 
+        project.ext.setProperty("baseBkpDir", baseBackupDir)
         project.ext.setProperty("finalBkpDir", finalBackupDir)
         return project.file(finalBackupDir)
     }
@@ -284,7 +293,7 @@ class BackupUtils {
         }
     }
 
-    static handleError(Project project, File logFile = null) {
+    static handleError(Project project) {
         try {
             // Delete tmp folder and current backup if exists
             def tmpBackupDir = project.findProperty("tmpBackupDir")
@@ -312,13 +321,53 @@ class BackupUtils {
             project.logger.info("Error deleting tmp/backup file: ${e.getMessage()}")
             throw e
         } finally {
+            saveLogs(project)
+            def logFile = project.findProperty("extFileToLog") as File
             def mode = project.findProperty("bkpMode")
             if (mode == "auto" && logFile && !project.findProperty("emailIsSending")) {
                 project.ext.setProperty("emailIsSending", true)
                 EmailSender emailSender = new EmailSender(project)
-                emailSender.sendLogToMail(project.file(logFile))
+                emailSender.sendLogToMail(logFile)
             }
         }
     }
 
+    static saveLogs(Project project) {
+        try {
+            CommandLine commandLine = CommandLine.getCommandLine(project)
+
+            def mode = project.findProperty("bkpMode")
+            def logFile = project.findProperty("extFileToLog") as File
+
+            if (!mode || !logFile) {
+                throw new IllegalArgumentException("Mode: $mode or logFile:${logFile?.absolutePath} not found")
+            }
+
+            // Generates the base dir if not exists
+            generateBackupDir(project)
+
+            def baseDir = project.findProperty("baseBkpDir")
+
+            def finalLogDir = "$baseDir/logs/$mode"
+
+            def etendoConf = loadEtendoBackupConf(project)
+            def user  = etendoConf?.USER ?: DEFAULT_USER
+            def group = etendoConf?.GROUP ?: DEFAULT_GROUP
+
+            // Create the directory where to save logs
+            commandLine.run(false,"sudo","mkdir","-p",finalLogDir)
+            commandLine.run(false,"sudo","chown","-R","${user}:${group}", "${baseDir}/logs")
+
+            // Move the log
+            project.logger.info("Moving ${logFile.absolutePath} into ${finalLogDir}")
+            commandLine.run(false,"sudo","mv","${logFile.absolutePath}","$finalLogDir")
+
+            // Update the log file location
+            def newLogFileLoc = project.file("${finalLogDir}/${logFile.name}")
+            project.ext.set("extFileToLog", newLogFileLoc)
+
+        } catch (Exception e) {
+            project.logger.info("Error saving the logs: ${e.getMessage()}")
+        }
+    }
 }

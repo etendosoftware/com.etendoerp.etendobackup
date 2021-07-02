@@ -1,4 +1,4 @@
-package com.smf.backup
+package com.etendoerp.backup
 
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -27,6 +27,7 @@ class BackupModule {
 
         project.ext.setProperty("tmpBackupDir", null)
         project.ext.setProperty("finalBkpDir", null)
+        project.ext.setProperty("baseBkpDir", null)
         project.ext.setProperty("confProperties", null)
         project.ext.setProperty("bkpDate", null)
         project.ext.setProperty("etendoConf", [:])
@@ -104,7 +105,15 @@ class BackupModule {
             doFirst {
                 log.logToFile(LogLevel.INFO, "Calculating sha1 checksums", project.findProperty("extFileToLog") as File)
                 File tmpDir = project.ext.getProperty("tmpBackupDir") as File
-                commandLine.run("sh","-c",""" cd ${tmpDir.absolutePath} && sha1sum * > sha1""")
+
+                // Default ubuntu command
+                def sha = "sha1sum"
+
+                if (project.hasProperty("mac")) {
+                    sha = "shasum -a 1"
+                }
+
+                commandLine.run("sh","-c",""" cd ${tmpDir.absolutePath} && $sha * > sha1""")
                 log.logToFile(LogLevel.INFO, "Creating the backup file", project.findProperty("extFileToLog") as File)
             }
 
@@ -121,10 +130,10 @@ class BackupModule {
                     BackupUtils.runRotation(project)
                 }
 
-                // TODO: move log files to the final backup folder
-
                 log.logToFile(LogLevel.INFO, "Backup Finalized", project.findProperty("extFileToLog") as File)
                 project.ext.set("checker", "finalized")
+
+                BackupUtils.saveLogs(project)
             }
         }
     }

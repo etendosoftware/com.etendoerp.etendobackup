@@ -1,4 +1,4 @@
-package com.smf.backup
+package com.etendoerp.backup
 
 import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
@@ -133,7 +133,8 @@ class EmailSender {
 
             send(senderConf as Map, from as String, to as String, subject, subject ,"text/plain", project.file(logFile), cc)
         } catch (Exception e) {
-            project.logger.info("Error sending email with 'GRADLE' \n", e.printStackTrace())
+            project.logger.info("Error sending email with 'GRADLE'")
+            e.printStackTrace()
             project.logger.info("Sending email with python script")
             def (exit, output) = sendPythonEmail(project.file(logFile))
             if (exit == 1) {

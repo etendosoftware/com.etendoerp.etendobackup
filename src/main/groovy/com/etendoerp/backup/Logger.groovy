@@ -1,4 +1,4 @@
-package com.smf.backup
+package com.etendoerp.backup
 
 import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
@@ -12,7 +12,7 @@ class Logger {
         this.project = project
     }
 
-    public static Logger getLogger(Project project) {
+    static Logger getLogger(Project project) {
         if (logger == null)  {
             logger = new Logger(project)
         }
@@ -28,9 +28,9 @@ class Logger {
                 def cause = throwable.getCause() ?: throwable
                 msg += "Cause: ${cause?.toString()}\n"
                 if (printStackTrace) {
-                    StringWriter sw = new StringWriter();
-                    throwable.printStackTrace(new PrintWriter(sw));
-                    String exceptionAsString = sw.toString();
+                    StringWriter sw = new StringWriter()
+                    throwable.printStackTrace(new PrintWriter(sw))
+                    String exceptionAsString = sw.toString()
                     msg += "Stacktrace: \n" + "${exceptionAsString}" + "\n"
                 }
             }
@@ -51,12 +51,12 @@ class Logger {
         } finally {
             if (logLevel == LogLevel.ERROR && !project.findProperty("errorHandled")) {
                 project.ext.setProperty("errorHandled", true)
-                BackupUtils.handleError(project, log)
+                BackupUtils.handleError(project)
             }
         }
     }
 
-    def getCurrentDate() {
+    static getCurrentDate() {
         return new Date(System.currentTimeMillis()).format("yyyy-MM-dd HH:mm:ssZ").toString()
     }
 

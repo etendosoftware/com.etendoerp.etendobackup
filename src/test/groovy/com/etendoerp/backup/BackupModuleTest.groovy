@@ -1,4 +1,4 @@
-package com.smf.backup
+package com.etendoerp.backup
 
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner

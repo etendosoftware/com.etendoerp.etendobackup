@@ -1,4 +1,4 @@
-package com.smf.backup
+package com.etendoerp.backup
 
 import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel

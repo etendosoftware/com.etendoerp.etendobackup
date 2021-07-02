@@ -18,8 +18,8 @@ dependencies {
 gradlePlugin {
     plugins {
         etendoBackupPlugin {
-            id = "com.smf.etendobackup"
-            implementationClass = "com.smf.EtendoBackupPlugin"
+            id = "com.etendoerp.etendobackup"
+            implementationClass = "com.etendoerp.EtendoBackupPlugin"
         }
     }
 }

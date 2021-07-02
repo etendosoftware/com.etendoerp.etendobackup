@@ -1,8 +1,7 @@
-package com.smf.backup
+package com.etendoerp.backup
 
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.StopExecutionException
 import org.gradle.api.tasks.bundling.Compression

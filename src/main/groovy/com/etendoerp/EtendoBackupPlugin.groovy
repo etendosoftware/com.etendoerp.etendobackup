@@ -1,6 +1,6 @@
-package com.smf
+package com.etendoerp
 
-import com.smf.backup.BackupModule
+import com.etendoerp.backup.BackupModule
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
