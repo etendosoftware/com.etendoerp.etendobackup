@@ -1,11 +1,22 @@
 plugins {
     id 'groovy'
-    id 'groovy-gradle-plugin'
+    id 'java-gradle-plugin'
+    id 'maven-publish'
 }
+
+group 'com.etendoerp'
+version '1.0.0'
 
 repositories {
     jcenter()
     mavenCentral()
+}
+
+publishing {
+    repositories {
+        // Test to publish locally
+        mavenLocal()
+    }
 }
 
 dependencies {
