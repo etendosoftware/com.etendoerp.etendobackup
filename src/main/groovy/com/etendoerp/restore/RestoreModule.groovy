@@ -74,6 +74,7 @@ class RestoreModule {
         project.tasks.register("restoreConfig") {
             doLast {
                 RestoreUtils.loadTmpDir(project)
+                RestoreUtils.loadBackupLocation(project)
                 VerificationMessages.userPermissionsVerification(project)
                 VerificationMessages.preDecompressVerification(project)
             }
