@@ -8,6 +8,8 @@ class BackupUtils {
     final static String DEFAULT_USER  = "futit"
     final static String DEFAULT_GROUP = "futit"
 
+    final static String LOG_EXTENSION = ".log"
+
     static loadBackupConfigurations(Project project) {
         Logger log = Logger.getLogger(project)
 
@@ -28,8 +30,8 @@ class BackupUtils {
         // Create file to log in a selected location
         // User should have permissions to create the backup log file
         if (!project.ext.has("extFileToLog") || project.ext.get("extFileToLog") == null) {
-            def tmpLogLocation = (etendoConf?.EMAIL_TEMP_FILE as String).replace(".txt","")
-            tmpLogLocation = tmpLogLocation.concat("-${date}.txt")
+            def tmpLogLocation = (etendoConf?.EMAIL_TEMP_FILE as String).replace(LOG_EXTENSION,"")
+            tmpLogLocation = tmpLogLocation.concat("-${date}${LOG_EXTENSION}")
             File logFile = project.file(tmpLogLocation)
             project.ext.set("extFileToLog", logFile)
         }
