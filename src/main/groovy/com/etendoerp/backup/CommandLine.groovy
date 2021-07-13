@@ -5,7 +5,6 @@ import org.gradle.api.logging.LogLevel
 
 class CommandLine {
 
-    private static CommandLine commandLine
     Project project
     Logger log
 
@@ -15,10 +14,7 @@ class CommandLine {
     }
 
     static CommandLine getCommandLine(Project project) {
-        if (commandLine == null) {
-            commandLine = new CommandLine(project)
-        }
-        return  commandLine
+        return new CommandLine(project)
     }
 
     def run(Boolean ignoreStderr = true, String... commands) {

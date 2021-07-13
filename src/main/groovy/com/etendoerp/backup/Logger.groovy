@@ -6,17 +6,13 @@ import org.gradle.api.logging.LogLevel
 class Logger {
 
     Project project
-    private static Logger logger
 
     private Logger(Project project) {
         this.project = project
     }
 
     static Logger getLogger(Project project) {
-        if (logger == null)  {
-            logger = new Logger(project)
-        }
-        return logger
+        return new Logger(project)
     }
 
     def logToFile(LogLevel logLevel, String message, File log = null, Throwable throwable = null, Boolean printStackTrace = false) {
@@ -50,7 +46,7 @@ class Logger {
             throw e
         } finally {
             if (logLevel == LogLevel.ERROR && !project.findProperty("errorHandled")) {
-                project.ext.setProperty("errorHandled", true)
+                project.ext.set("errorHandled", true)
                 BackupUtils.handleError(project)
             }
         }
