@@ -65,7 +65,20 @@ class VerificationHelper {
 
         if (forbiddenDirs.contains(selectedDir)) {
             println("*** WARNING !!! The destination directory inserted is FORBIDDEN. \n")
-            selectedDir = defaultDestDir
+            return defaultDestDir
+        }
+
+        if (selectedDir) {
+            String[] paths = (selectedDir as String ).split("\\/")
+            def auxPath = ""
+
+            for(String path : paths) {
+                auxPath += path + "/"
+                if (project.file(auxPath).exists() && !project.file(auxPath).isDirectory()) {
+                    println("*** WARNING !!! The destination ${auxPath} IS NOT A DIRECTORY! \n")
+                    return defaultDestDir
+                }
+            }
         }
 
         return selectedDir

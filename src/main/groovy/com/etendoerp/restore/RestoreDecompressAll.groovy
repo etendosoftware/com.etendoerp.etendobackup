@@ -82,7 +82,7 @@ class RestoreDecompressAll {
         // Load config/Openbravo.properties
         def openbravoProps = new Properties()
         project.file("${sourcesLocation}/config/Openbravo.properties").withInputStream { openbravoProps.load(it) }
-        def sourcesAttachLocation = openbravoProps.getProperty("attach.path","")
+        def sourcesAttachLocation = openbravoProps.getProperty("attach.path") ?: "/undefined"
         def originalSourcesDirectory = openbravoProps.getProperty("source.path", "")
 
         project.ext.setProperty(RestoreModule.SOURCES_ATTACH_LOCATION, sourcesAttachLocation)

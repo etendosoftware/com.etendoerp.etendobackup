@@ -98,7 +98,7 @@ class VerificationMessages {
             // Confirm sources destination directory
 
             def destDirMessage = "* The Sources destination directory is set to: \n"
-            destDirMessage +=    "* '${defaultDestDir}' "
+            destDirMessage +=    "* '${project.file(defaultDestDir).absolutePath}' "
             destDirMessage +=    "${(defaultDestDir == projectDir) ? "(Current project dir)":""}\n"
 
             if (!project.file(defaultDestDir).exists())  {
@@ -218,8 +218,8 @@ class VerificationMessages {
             while (userChoice != copyAttachOpt && userChoice != ignoreAttachOpt) {
 
                 def externalAttachMessage = ""
-                externalAttachMessage += "* The backup has external attachments                                        \n"
-                externalAttachMessage += "* The external attachments will be copied in: $tmpAttachLoc                  \n"
+                externalAttachMessage += "* The backup has external attachments                                                    \n"
+                externalAttachMessage += "* The external attachments will be copied in: ${project.file(tmpAttachLoc).absolutePath} \n"
 
                 // Check if the location exists
                 if (!project.file(tmpAttachLoc).exists()) {
