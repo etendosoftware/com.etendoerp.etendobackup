@@ -1,11 +1,22 @@
 plugins {
     id 'groovy'
-    id 'groovy-gradle-plugin'
+    id 'java-gradle-plugin'
+    id 'maven-publish'
 }
+
+group 'com.etendoerp'
+version '1.0.0'
 
 repositories {
     jcenter()
     mavenCentral()
+}
+
+publishing {
+    repositories {
+        // Test to publish locally
+        mavenLocal()
+    }
 }
 
 dependencies {
@@ -18,8 +29,8 @@ dependencies {
 gradlePlugin {
     plugins {
         etendoBackupPlugin {
-            id = "com.smf.etendobackup"
-            implementationClass = "com.smf.EtendoBackupPlugin"
+            id = "com.etendoerp.etendobackup"
+            implementationClass = "com.etendoerp.EtendoBackupPlugin"
         }
     }
 }
