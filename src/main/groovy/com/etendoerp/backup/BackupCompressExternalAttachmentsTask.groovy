@@ -7,9 +7,9 @@ import org.gradle.api.tasks.StopExecutionException
 import org.gradle.api.tasks.bundling.Compression
 import org.gradle.api.tasks.bundling.Tar
 
-class BackupCompressExternalAttachmentsTask {
+import com.etendoerp.conventions.ConventionNames as CN
 
-    final static String ATTACH_TAR_NAME = "attach"
+class BackupCompressExternalAttachmentsTask {
 
     static load(Project project) {
 
@@ -21,7 +21,7 @@ class BackupCompressExternalAttachmentsTask {
                 def conf = BackupUtils.loadConfigurationProperties(project)
                 Task extAttachTar = project.tasks.named("backupCompressExternalAttachments").get() as Tar
                 extAttachTar.destinationDirectory.set(tmpDir)
-                extAttachTar.archiveFileName.set("${ATTACH_TAR_NAME}.tar.gz")
+                extAttachTar.archiveFileName.set("${CN.ATTACH_TAR_NAME}${CN.EXTENSION}")
                 extAttachTar.from(project.file(conf.attach_path))
             }
         }
@@ -40,7 +40,7 @@ class BackupCompressExternalAttachmentsTask {
             doFirst {
                 def attachPath = project.findProperty("confProperties")?.attach_path
                 def attachCopy = project.findProperty("etendoConf")?.ATTACH_COPY
-                if (!(attachCopy == "yes" && attachPath != "${project.rootDir.absolutePath}/attachments")) {
+                if (!(attachCopy == "yes" && attachPath != "${project.rootDir.absolutePath}${CN.DEFAULT_ATTACH_FOLDER}")) {
                     throw new StopExecutionException("Skip external attachments")
                 }
                 log.logToFile(LogLevel.INFO, "Compressing external attachments", project.findProperty("extFileToLog") as File)

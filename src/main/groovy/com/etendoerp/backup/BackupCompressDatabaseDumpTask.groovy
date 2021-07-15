@@ -6,9 +6,9 @@ import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.bundling.Compression
 import org.gradle.api.tasks.bundling.Tar
 
-class BackupCompressDatabaseDumpTask {
+import com.etendoerp.conventions.ConventionNames as CN
 
-    final static String DUMP_TAR_NAME = "db-dump"
+class BackupCompressDatabaseDumpTask {
 
     static load(Project project) {
 
@@ -19,16 +19,16 @@ class BackupCompressDatabaseDumpTask {
                 File tmpDir = BackupUtils.generateTmpDir(project)
                 Task databaseTar = project.tasks.named("backupCompressDatabaseDump").get() as Tar
 
-                databaseTar.archiveFileName.set("${DUMP_TAR_NAME}.tar.gz")
+                databaseTar.archiveFileName.set("${CN.DUMP_TAR_NAME}${CN.EXTENSION}")
                 databaseTar.destinationDirectory.set(tmpDir)
-                databaseTar.from("${tmpDir.absolutePath}/${BackupDatabaseDumpTask.DUMP_NAME}")
+                databaseTar.from("${tmpDir.absolutePath}/${CN.DUMP_NAME}")
             }
         }
 
         project.tasks.register("backupDeleteDatabaseDump") {
             doLast {
                 if (project.ext.has("tmpBackupDir") && project.ext.get("tmpBackupDir") != null) {
-                    def dumpName = BackupDatabaseDumpTask.DUMP_NAME
+                    def dumpName = CN.DUMP_NAME
                     log.logToFile(LogLevel.INFO, "Deleting ${dumpName}", project.findProperty("extFileToLog") as File)
                     project.delete("${(project.ext.get("tmpBackupDir") as File).absolutePath}/${dumpName}")
                 }

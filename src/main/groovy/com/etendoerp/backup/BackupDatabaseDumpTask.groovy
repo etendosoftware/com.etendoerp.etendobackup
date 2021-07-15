@@ -5,9 +5,9 @@ import org.gradle.api.Task
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.Exec
 
-class BackupDatabaseDumpTask {
+import com.etendoerp.conventions.ConventionNames as CN
 
-    final static String DUMP_NAME = "db.dump"
+class BackupDatabaseDumpTask {
 
     static load(Project project) {
 
@@ -17,7 +17,7 @@ class BackupDatabaseDumpTask {
             doLast {
                 def dbConf = BackupUtils.loadConfigurationProperties(project)
                 def tmpDir = BackupUtils.generateTmpDir(project)
-                def dumpName = "${tmpDir.absolutePath}/${DUMP_NAME}"
+                def dumpName = "${tmpDir.absolutePath}/${CN.DUMP_NAME}"
                 Task dbDump = project.tasks.named("backupDatabaseDumpExec").get() as Exec
                 dbDump.environment("PGPASSWORD", dbConf.db_pass)
                 dbDump.commandLine("pg_dump","-p","${dbConf.db_port}","-h","${dbConf.db_host}","-U","${dbConf.db_login}","-Fc","-b","-f","${dumpName}","${dbConf.db_name}")

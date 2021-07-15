@@ -7,10 +7,9 @@ import org.gradle.api.tasks.StopExecutionException
 import org.gradle.api.tasks.bundling.Compression
 import org.gradle.api.tasks.bundling.Tar
 
-class BackupCompressWebappTask {
+import com.etendoerp.conventions.ConventionNames as CN
 
-    final static String WEBAPP_TAR_NAME = "wepapp"
-    final static String DEFAULT_TOMCAT_FOLDER = "/var/lib/tomcat/webapps/"
+class BackupCompressWebappTask {
 
     static load(Project project) {
 
@@ -18,12 +17,11 @@ class BackupCompressWebappTask {
 
         project.tasks.register("backupCompressWebappConfig") {
             doLast {
-
                 def confProps = BackupUtils.loadConfigurationProperties(project)
                 def etendoConf = BackupUtils.loadEtendoBackupConf(project)
 
                 def contextName = confProps?.context_name ?: "undefined"
-                def tomcatLocation = (etendoConf?.TOMCAT_PATH ?: DEFAULT_TOMCAT_FOLDER as String).concat(contextName)
+                def tomcatLocation = (etendoConf?.TOMCAT_PATH ?: CN.DEFAULT_TOMCAT_FOLDER as String).concat(contextName as String)
 
                 def tomcatLocFile = project.file(tomcatLocation)
 
@@ -38,7 +36,7 @@ class BackupCompressWebappTask {
                 File tmpDir = BackupUtils.generateTmpDir(project)
                 Task webappTar = project.tasks.named("backupCompressWebapp").get() as Tar
 
-                webappTar.archiveFileName.set("${WEBAPP_TAR_NAME}.tar.gz")
+                webappTar.archiveFileName.set("${CN.WEBAPP_TAR_NAME}${CN.EXTENSION}")
                 webappTar.destinationDirectory.set(tmpDir)
                 webappTar.from(tomcatLocFile)
             }

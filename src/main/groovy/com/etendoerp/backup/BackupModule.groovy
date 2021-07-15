@@ -1,5 +1,6 @@
 package com.etendoerp.backup
 
+import com.etendoerp.backup.mode.Mode
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.DirectoryProperty
@@ -7,6 +8,8 @@ import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.TaskState
 import org.gradle.api.tasks.bundling.Compression
 import org.gradle.api.tasks.bundling.Tar
+
+import com.etendoerp.conventions.ConventionNames as CN
 
 class BackupModule {
 
@@ -72,7 +75,7 @@ class BackupModule {
                 // Configure 'backup' task from another task to prevent 'Eagerly' configuration
                 Task backup = project.tasks.named("backup").get() as Tar
 
-                def backupName = "backup-${project.ext.get("bkpDate")}.tar.gz"
+                def backupName = "${CN.BACKUP_TAR_NAME}-${project.ext.get("bkpDate")}${CN.EXTENSION}"
                 project.ext.setProperty("backupName", backupName)
                 backup.archiveFileName.set(backupName)
                 backup.destinationDirectory.set(bkpDir)
@@ -126,7 +129,7 @@ class BackupModule {
                 // Rotation
                 def mode = project.findProperty("bkpMode")
                 def rotationEnabled = project.findProperty("etendoConf")?.ROTATION_ENABLED
-                if (mode == "auto" && rotationEnabled == "yes" ) {
+                if (mode == Mode.AUTO.value && rotationEnabled == "yes" ) {
                     BackupUtils.runRotation(project)
                 }
 

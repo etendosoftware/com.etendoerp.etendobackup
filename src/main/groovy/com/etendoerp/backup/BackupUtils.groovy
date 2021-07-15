@@ -1,7 +1,10 @@
 package com.etendoerp.backup
 
+import com.etendoerp.backup.mode.Mode
 import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
+
+import com.etendoerp.conventions.ConventionNames as CN
 
 class BackupUtils {
 
@@ -53,10 +56,10 @@ class BackupUtils {
 
         // Configure Mode
         def mode = project.findProperty("bkpMode")
-        if (mode != "auto" && mode != "manual") {
+        if (!Mode.containsVal(mode as String)) {
             throw new IllegalArgumentException(
-                    "Invalid backup mode ${mode?.toString()}, valid options: auto , manual. \n" +
-                            "Provide a correct bkpMode property or -PbkpMode flag. Ex -PbkpMode=manual"
+                    "Invalid backup mode ${mode?.toString()}, valid options: ${Mode.values()*.value}. \n" +
+                            "Provide a correct bkpMode property or -PbkpMode flag. Ex -PbkpMode=${Mode.MANUAL.value}"
             )
         }
 
@@ -108,7 +111,7 @@ class BackupUtils {
 
         def tmpMap = [:]
 
-        def confPath = "config/Openbravo.properties"
+        def confPath = CN.DEFAULT_CONFIG_PROPERTIES_LOCATION
 
         def confFile = project.file(confPath)
 
@@ -326,7 +329,7 @@ class BackupUtils {
             saveLogs(project)
             def logFile = project.findProperty("extFileToLog") as File
             def mode = project.findProperty("bkpMode")
-            if (mode == "auto" && logFile && !project.findProperty("emailIsSending")) {
+            if (mode == Mode.AUTO.value && logFile && !project.findProperty("emailIsSending")) {
                 project.ext.setProperty("emailIsSending", true)
                 EmailSender emailSender = new EmailSender(project)
                 emailSender.sendLogToMail(logFile)
@@ -341,7 +344,7 @@ class BackupUtils {
             def mode = project.findProperty("bkpMode")
             def logFile = project.findProperty("extFileToLog") as File
 
-            if (!mode || !logFile) {
+            if (!mode || !logFile || !Mode.containsVal(mode as String)) {
                 throw new IllegalArgumentException("Mode: $mode or logFile:${logFile?.absolutePath} not found")
             }
 

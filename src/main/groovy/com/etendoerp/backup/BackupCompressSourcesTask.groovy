@@ -6,6 +6,8 @@ import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.bundling.Compression
 import org.gradle.api.tasks.bundling.Tar
 
+import com.etendoerp.conventions.ConventionNames as CN
+
 class BackupCompressSourcesTask {
 
     static load(Project project) {
@@ -16,14 +18,14 @@ class BackupCompressSourcesTask {
                 Task sourcesTar = project.tasks.named("backupCompressSourcesTar").get() as Tar
 
                 File tmpDir = BackupUtils.generateTmpDir(project)
-                sourcesTar.archiveFileName.set("sources.tar.gz")
+                sourcesTar.archiveFileName.set("${CN.SOURCES_TAR_NAME}${CN.EXTENSION}")
                 sourcesTar.destinationDirectory.set(tmpDir)
                 sourcesTar.from(project.rootProject.rootDir, {
                     def attachInBkp = project.findProperty("etendoConf")?.ATTACH_IN_BKP
                     def attchMsg = "with attachments"
                     if (attachInBkp && attachInBkp != "yes") {
                         attchMsg = "without attachments"
-                        exclude "attachments"
+                        exclude CN.DEFAULT_ATTACH_FOLDER
                     }
                     log.logToFile(LogLevel.INFO, "Sources ${project.rootProject.rootDir} will be compressed ${attchMsg}", project.findProperty("extFileToLog") as File)
                 })
