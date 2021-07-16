@@ -15,8 +15,34 @@ class BackupModule {
 
     static Logger log
     static CommandLine commandLine
-    static File logFile
     static Project project
+
+    /**
+     * Project property to be inserted via command line.
+     */
+    final static String BACKUP_MODE  = "bkpMode"
+    final static String BACKUP_MAC   = "mac"
+
+    final static String TMP_DIR      = "backupTmpDir"
+    final static String FINAL_DIR    = "backupFinalDir"
+    final static String BASE_DIR     = "backupBaseDir"
+    final static String CURRENT_DATE = "backupCurrentDate"
+    final static String FILE_TO_LOG  = "backupFileToLog"
+    final static String BACKUP_NAME  = "backupName"
+
+    final static String EMAIL_IS_SENDING = "backupEmailIsSending"
+    final static String ERROR_HANDLED    = "backupErrorHandled"
+
+    /**
+     * Properties extracted from '/config' directory
+     */
+    final static String CONFIG_PROPERTIES = "backupConfigProperties"
+
+    /**
+     * Properties extracted from 'etendo-backup.conf.properties' file
+     */
+    final static String ETENDO_BACKUP_PROPERTIES = "backupEtendoConfigProperties"
+
 
     static void load (Project project) {
 
@@ -26,21 +52,25 @@ class BackupModule {
         commandLine = CommandLine.getCommandLine(project)
         this.project = project
 
-        project.ext.extFileTolog = logFile
+        project.ext.set(TMP_DIR      ,null)
+        project.ext.set(FINAL_DIR    ,null)
+        project.ext.set(BASE_DIR     ,null)
+        project.ext.set(CURRENT_DATE ,null)
+        project.ext.set(FILE_TO_LOG  ,null)
+        project.ext.set(BACKUP_NAME  ,null)
 
-        project.ext.setProperty("tmpBackupDir", null)
-        project.ext.setProperty("finalBkpDir", null)
-        project.ext.setProperty("baseBkpDir", null)
-        project.ext.setProperty("confProperties", null)
-        project.ext.setProperty("bkpDate", null)
-        project.ext.setProperty("etendoConf", [:])
+        project.ext.set(EMAIL_IS_SENDING ,false)
+        project.ext.set(ERROR_HANDLED    ,false)
+
+        project.ext.set(CONFIG_PROPERTIES        ,null)
+        project.ext.set(ETENDO_BACKUP_PROPERTIES ,[:])
 
         project.gradle.taskGraph.afterTask { Task task, TaskState state ->
             if (task.name.startsWith("backup")) {
                 if (state.failure) {
                     Throwable throwable = state.failure
                     def failureMessage ="Error on $task "
-                    log.logToFile(LogLevel.ERROR, failureMessage, project.findProperty("extFileToLog") as File, throwable)
+                    log.logToFile(LogLevel.ERROR, failureMessage, project.findProperty(FILE_TO_LOG) as File, throwable)
                 }
             }
         }
@@ -75,20 +105,18 @@ class BackupModule {
                 // Configure 'backup' task from another task to prevent 'Eagerly' configuration
                 Task backup = project.tasks.named("backup").get() as Tar
 
-                def backupName = "${CN.BACKUP_TAR_NAME}-${project.ext.get("bkpDate")}${CN.EXTENSION}"
-                project.ext.setProperty("backupName", backupName)
+                def backupName = "${CN.BACKUP_TAR_NAME}-${project.ext.get(CURRENT_DATE)}${CN.EXTENSION}"
+                project.ext.setProperty(BACKUP_NAME, backupName)
                 backup.archiveFileName.set(backupName)
                 backup.destinationDirectory.set(bkpDir)
                 backup.from(project.file(tmpDir))
-
             }
         }
 
         project.tasks.register("backupDeleteTmpFolder") {
             doLast {
-                if ( project.ext.has("tmpBackupDir") && project.ext.get("tmpBackupDir") != null) {
-                    log.logToFile(LogLevel.INFO, "Deleting tmp folder", project.findProperty("extFileToLog") as File)
-                    project.delete("${(project.ext.get("tmpBackupDir") as File).absolutePath}")
+                if (BackupUtils.deleteTmpDir(project)) {
+                    log.logToFile(LogLevel.INFO, "Tmp folder deleted", project.findProperty(FILE_TO_LOG) as File)
                 }
             }
         }
@@ -101,40 +129,39 @@ class BackupModule {
                 compression = Compression.GZIP
                 finalizedBy project.tasks.named("backupDeleteTmpFolder")
             } catch (Exception e) {
-                log.logToFile(LogLevel.ERROR, "Error on backup Configuration", project.findProperty("extFileToLog") as File, e)
+                log.logToFile(LogLevel.ERROR, "Error on backup Configuration", project.findProperty(FILE_TO_LOG) as File, e)
                 throw e
             }
 
             doFirst {
-                log.logToFile(LogLevel.INFO, "Calculating sha1 checksums", project.findProperty("extFileToLog") as File)
-                File tmpDir = project.ext.getProperty("tmpBackupDir") as File
+                log.logToFile(LogLevel.INFO, "Calculating sha1 checksums", project.findProperty(FILE_TO_LOG) as File)
+                File tmpDir = project.ext.getProperty(TMP_DIR) as File
 
                 // Default ubuntu command
                 def sha = "sha1sum"
 
-                if (project.hasProperty("mac")) {
+                if (project.hasProperty(BACKUP_MAC)) {
                     sha = "shasum -a 1"
                 }
 
                 commandLine.run("sh","-c",""" cd ${tmpDir.absolutePath} && $sha * > sha1""")
-                log.logToFile(LogLevel.INFO, "Creating the backup file", project.findProperty("extFileToLog") as File)
+                log.logToFile(LogLevel.INFO, "Creating the backup file", project.findProperty(FILE_TO_LOG) as File)
             }
 
             doLast {
                 def folderName = (destinationDirectory as DirectoryProperty).get().asFile.absolutePath
-                log.logToFile(LogLevel.INFO, "Backup done: ${folderName}/${archiveFileName.get()} Created ", project.findProperty("extFileToLog") as File)
+                log.logToFile(LogLevel.INFO, "Backup done: ${folderName}/${archiveFileName.get()} Created ", project.findProperty(FILE_TO_LOG) as File)
 
                 // Sync and rotation
 
                 // Rotation
-                def mode = project.findProperty("bkpMode")
-                def rotationEnabled = project.findProperty("etendoConf")?.ROTATION_ENABLED
+                def mode = project.findProperty(BACKUP_MODE)
+                def rotationEnabled = project.findProperty(ETENDO_BACKUP_PROPERTIES)?.ROTATION_ENABLED
                 if (mode == Mode.AUTO.value && rotationEnabled == "yes" ) {
                     BackupUtils.runRotation(project)
                 }
 
-                log.logToFile(LogLevel.INFO, "Backup Finalized", project.findProperty("extFileToLog") as File)
-                project.ext.set("checker", "finalized")
+                log.logToFile(LogLevel.INFO, "Backup Finalized", project.findProperty(FILE_TO_LOG) as File)
 
                 BackupUtils.saveLogs(project)
             }

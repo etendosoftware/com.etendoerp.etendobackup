@@ -6,6 +6,8 @@ import org.gradle.api.logging.LogLevel
 import javax.mail.*
 import javax.mail.internet.*
 
+import com.etendoerp.backup.BackupModule as BM
+
 class EmailSender {
 
     Project project
@@ -73,7 +75,7 @@ class EmailSender {
 
         // Send mail.
         Transport.send(message, email, password)
-        log.logToFile(LogLevel.INFO, "Email sended with 'GRADLE'", project.findProperty("extFileToLog") as File)
+        log.logToFile(LogLevel.INFO, "Email sended with 'GRADLE'", project.findProperty(BM.FILE_TO_LOG) as File)
     }
 
     def sendPythonEmail(File logFile) {
@@ -139,7 +141,7 @@ class EmailSender {
             def (exit, output) = sendPythonEmail(project.file(logFile))
             if (exit == 1) {
                 // Save email result in the logfile
-                log.logToFile(LogLevel.WARN, "Error sending email with 'GRADLE' and 'PYTHON'", project.findProperty("extFileToLog") as File, e)
+                log.logToFile(LogLevel.WARN, "Error sending email with 'GRADLE' and 'PYTHON'", project.findProperty(BM.FILE_TO_LOG) as File, e)
                 throw new IllegalStateException("Error sending email with python script: ${output}")
             }
         }

@@ -3,6 +3,8 @@ package com.etendoerp.backup
 import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
 
+import com.etendoerp.backup.BackupModule as BM
+
 class Logger {
 
     Project project
@@ -45,8 +47,8 @@ class Logger {
             }
             throw e
         } finally {
-            if (logLevel == LogLevel.ERROR && !project.findProperty("errorHandled")) {
-                project.ext.set("errorHandled", true)
+            if (logLevel == LogLevel.ERROR && !project.findProperty(BM.ERROR_HANDLED)) {
+                project.ext.set(BM.ERROR_HANDLED, true)
                 BackupUtils.handleError(project)
             }
         }

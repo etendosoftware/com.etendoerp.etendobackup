@@ -8,6 +8,7 @@ import org.gradle.api.tasks.bundling.Compression
 import org.gradle.api.tasks.bundling.Tar
 
 import com.etendoerp.conventions.ConventionNames as CN
+import com.etendoerp.backup.BackupModule as BM
 
 class BackupCompressWebappTask {
 
@@ -17,6 +18,11 @@ class BackupCompressWebappTask {
 
         project.tasks.register("backupCompressWebappConfig") {
             doLast {
+
+                if (!project.hasProperty("includeWebapp")) {
+                    throw new StopExecutionException("Skipping webapp folder")
+                }
+
                 def confProps = BackupUtils.loadConfigurationProperties(project)
                 def etendoConf = BackupUtils.loadEtendoBackupConf(project)
 
@@ -25,14 +31,13 @@ class BackupCompressWebappTask {
 
                 def tomcatLocFile = project.file(tomcatLocation)
 
-                if (project.hasProperty("includeWebapp")) {
-                    if (tomcatLocFile.exists()) {
-                        log.logToFile(LogLevel.INFO, "Tomcat webapp folder: ${tomcatLocation} Will be compressed", project.findProperty("extFileToLog") as File)
-                    } else {
-                        log.logToFile(LogLevel.WARN, "Tomcat webapp folder: ${tomcatLocation} Not found. Skipping...", project.findProperty("extFileToLog") as File)
-                    }
+                if (tomcatLocFile.exists()) {
+                    log.logToFile(LogLevel.INFO, "Tomcat webapp folder: ${tomcatLocation} Will be compressed", project.findProperty(BM.FILE_TO_LOG) as File)
+                } else {
+                    log.logToFile(LogLevel.WARN, "Tomcat webapp folder: ${tomcatLocation} Not found. Skipping...", project.findProperty(BM.FILE_TO_LOG) as File)
+                    throw new StopExecutionException("Tomcat webapp folder: ${tomcatLocation} Not found. Skipping...")
                 }
-
+                
                 File tmpDir = BackupUtils.generateTmpDir(project)
                 Task webappTar = project.tasks.named("backupCompressWebapp").get() as Tar
 
@@ -44,12 +49,12 @@ class BackupCompressWebappTask {
 
         project.tasks.register("backupCompressWebapp", Tar) {
             try {
-                log.logToFile(LogLevel.INFO, "Starting backupCompressWebapp Configuration", project.findProperty("extFileToLog") as File)
+                log.logToFile(LogLevel.INFO, "Starting backupCompressWebapp Configuration", project.findProperty(BM.FILE_TO_LOG) as File)
                 mustRunAfter = ["backupConfig"]
                 dependsOn "backupCompressWebappConfig"
                 compression = Compression.GZIP
             } catch (Exception e) {
-                log.logToFile(LogLevel.ERROR, "Error on backupCompressWebapp Configuration", project.findProperty("extFileToLog") as File, e)
+                log.logToFile(LogLevel.ERROR, "Error on backupCompressWebapp Configuration", project.findProperty(BM.FILE_TO_LOG) as File, e)
                 throw e
             }
 
@@ -58,11 +63,11 @@ class BackupCompressWebappTask {
                     throw new StopExecutionException("Skipping webapp folder")
                 }
 
-                log.logToFile(LogLevel.INFO, "Compressing webapp folder", project.findProperty("extFileToLog") as File)
+                log.logToFile(LogLevel.INFO, "Compressing webapp folder", project.findProperty(BM.FILE_TO_LOG) as File)
             }
 
             doLast {
-                log.logToFile(LogLevel.INFO, "'Compressing webapp' execution finalized.", project.findProperty("extFileToLog") as File)
+                log.logToFile(LogLevel.INFO, "'Compressing webapp' execution finalized.", project.findProperty(BM.FILE_TO_LOG) as File)
             }
         }
 

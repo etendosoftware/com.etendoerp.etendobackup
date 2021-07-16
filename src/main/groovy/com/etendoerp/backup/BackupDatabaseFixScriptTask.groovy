@@ -6,6 +6,8 @@ import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.StopExecutionException
 
+import com.etendoerp.backup.BackupModule as BM
+
 class BackupDatabaseFixScriptTask {
 
     static load(Project project) {
@@ -15,10 +17,16 @@ class BackupDatabaseFixScriptTask {
         project.tasks.register("backupDatabaseDumpFixScriptConfig") {
             doLast {
                 BackupUtils.loadEtendoBackupConf(project)
+
+                def fixScript = project.findProperty(BM.ETENDO_BACKUP_PROPERTIES)?.EXEC_FIX_SCRIPT
+                if (fixScript != "yes") {
+                    throw new StopExecutionException("Skipping DB FIX SCRIPT")
+                }
+
                 def dbConf = BackupUtils.loadConfigurationProperties(project)
 
                 Task dbFixScript = project.tasks.named("backupDatabaseDumpFixScript").get() as Exec
-                def scriptFile = project.file(project.findProperty("etendoConf")?.SCRIPT_FILE)
+                def scriptFile = project.file(project.findProperty(BM.ETENDO_BACKUP_PROPERTIES)?.SCRIPT_FILE)
                 dbFixScript.environment("PGPASSWORD", dbConf.db_pass)
                 dbFixScript.commandLine("psql","-h","${dbConf.db_host}","-p","${dbConf.db_port}","-U","${dbConf.db_login}","-d","${dbConf.db_name}","-a","-f","${scriptFile.absolutePath}")
             }
@@ -32,11 +40,11 @@ class BackupDatabaseFixScriptTask {
             ignoreExitValue true
 
             doFirst {
-                def fixScript = project.findProperty("etendoConf")?.EXEC_FIX_SCRIPT
+                def fixScript = project.findProperty(BM.ETENDO_BACKUP_PROPERTIES)?.EXEC_FIX_SCRIPT
                 if (fixScript != "yes") {
                     throw new StopExecutionException("Skipping DB FIX SCRIPT")
                 }
-                log.logToFile(LogLevel.INFO, "DB FIX SCRIPT is running", project.findProperty("extFileToLog") as File)
+                log.logToFile(LogLevel.INFO, "DB FIX SCRIPT is running", project.findProperty(BM.FILE_TO_LOG) as File)
             }
 
             doLast {
@@ -49,7 +57,7 @@ class BackupDatabaseFixScriptTask {
 
                 // Save output in a log file
                 // User must have permissions and the folder should exists
-                def outputFile = project.file(project.findProperty("etendoConf")?.OUTPUT_FILE)
+                def outputFile = project.file(project.findProperty(BM.ETENDO_BACKUP_PROPERTIES)?.OUTPUT_FILE)
 
                 // Concat the stderr to the output (2>&1)
                 outputFile.write(output.concat(errorOutput.toString()))
@@ -57,7 +65,7 @@ class BackupDatabaseFixScriptTask {
                 log.logToFile(
                         LogLevel.INFO,
                         "'DB FIX SCRIPT' execution finalized. Exit Value: ${exitValue}",
-                        project.findProperty("extFileToLog") as File
+                        project.findProperty(BM.FILE_TO_LOG) as File
                 )
             }
         }

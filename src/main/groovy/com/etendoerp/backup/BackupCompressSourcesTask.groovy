@@ -7,6 +7,7 @@ import org.gradle.api.tasks.bundling.Compression
 import org.gradle.api.tasks.bundling.Tar
 
 import com.etendoerp.conventions.ConventionNames as CN
+import com.etendoerp.backup.BackupModule as BM
 
 class BackupCompressSourcesTask {
 
@@ -21,13 +22,13 @@ class BackupCompressSourcesTask {
                 sourcesTar.archiveFileName.set("${CN.SOURCES_TAR_NAME}${CN.EXTENSION}")
                 sourcesTar.destinationDirectory.set(tmpDir)
                 sourcesTar.from(project.rootProject.rootDir, {
-                    def attachInBkp = project.findProperty("etendoConf")?.ATTACH_IN_BKP
+                    def attachInBkp = project.findProperty(BM.ETENDO_BACKUP_PROPERTIES)?.ATTACH_IN_BKP
                     def attchMsg = "with attachments"
                     if (attachInBkp && attachInBkp != "yes") {
                         attchMsg = "without attachments"
                         exclude CN.DEFAULT_ATTACH_FOLDER
                     }
-                    log.logToFile(LogLevel.INFO, "Sources ${project.rootProject.rootDir} will be compressed ${attchMsg}", project.findProperty("extFileToLog") as File)
+                    log.logToFile(LogLevel.INFO, "Sources ${project.rootProject.rootDir} will be compressed ${attchMsg}", project.findProperty(BM.FILE_TO_LOG) as File)
                 })
             }
         }
@@ -38,14 +39,14 @@ class BackupCompressSourcesTask {
                 dependsOn "backupCompressSourcesTarConfig"
                 compression = Compression.GZIP
             } catch (Exception e) {
-                log.logToFile(LogLevel.ERROR, "Error on backupCompressSourcesTar Configuration", project.findProperty("extFileToLog") as File, e)
+                log.logToFile(LogLevel.ERROR, "Error on backupCompressSourcesTar Configuration", project.findProperty(BM.FILE_TO_LOG) as File, e)
                 throw e
             }
             doFirst {
-                log.logToFile(LogLevel.INFO, "Compressing sources", project.findProperty("extFileToLog") as File)
+                log.logToFile(LogLevel.INFO, "Compressing sources", project.findProperty(BM.FILE_TO_LOG) as File)
             }
             doLast {
-                log.logToFile(LogLevel.INFO, "'Compressing sources' execution finalized.", project.findProperty("extFileToLog") as File)
+                log.logToFile(LogLevel.INFO, "'Compressing sources' execution finalized.", project.findProperty(BM.FILE_TO_LOG) as File)
             }
         }
 

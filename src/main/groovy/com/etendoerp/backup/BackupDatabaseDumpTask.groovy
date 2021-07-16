@@ -6,6 +6,7 @@ import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.Exec
 
 import com.etendoerp.conventions.ConventionNames as CN
+import com.etendoerp.backup.BackupModule as BM
 
 class BackupDatabaseDumpTask {
 
@@ -26,7 +27,7 @@ class BackupDatabaseDumpTask {
 
         project.tasks.register("backupDatabaseDumpExec", Exec) {
             try {
-                log.logToFile(LogLevel.INFO, "Starting backupDatabaseDumpExec Configuration", project.findProperty("extFileToLog") as File)
+                log.logToFile(LogLevel.INFO, "Starting backupDatabaseDumpExec Configuration", project.findProperty(BM.FILE_TO_LOG) as File)
 
                 mustRunAfter = ["backupConfig", "backupCompressDatabaseDumpConfig"]
                 dependsOn ("backupDatabaseDumpExecConfig", "backupDatabaseDumpFixScript")
@@ -34,12 +35,12 @@ class BackupDatabaseDumpTask {
                 errorOutput = new ByteArrayOutputStream()
                 ignoreExitValue true
             } catch (Exception e) {
-                log.logToFile(LogLevel.ERROR, "Error on backupDatabaseDumpExec Configuration", project.findProperty("extFileToLog") as File, e)
+                log.logToFile(LogLevel.ERROR, "Error on backupDatabaseDumpExec Configuration", project.findProperty(BM.FILE_TO_LOG) as File, e)
                 throw e
             }
 
             doFirst {
-                log.logToFile(LogLevel.INFO, "Creating database dump", project.findProperty("extFileToLog") as File)
+                log.logToFile(LogLevel.INFO, "Creating database dump", project.findProperty(BM.FILE_TO_LOG) as File)
             }
 
             doLast {
@@ -53,7 +54,7 @@ class BackupDatabaseDumpTask {
                 log.logToFile(
                         LogLevel.INFO,
                         "'Creating database dump' execution finalized. Exit Value: ${exitValue}",
-                        project.findProperty("extFileToLog") as File
+                        project.findProperty(BM.FILE_TO_LOG) as File
                 )
             }
         }
