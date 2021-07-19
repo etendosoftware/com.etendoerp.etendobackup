@@ -1,19 +1,12 @@
 package com.etendoerp
 
-import com.etendoerp.restore.RestoreModule
+import com.etendoerp.backup.BackupModule
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
-class EtendoBackupPlugin implements Plugin<Project>{
-
-
-
-
-
-    // Load restore tasks
+public class EtendoBackupPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
-        RestoreModule.load(project)
+        BackupModule.load(project)
     }
-
 }
