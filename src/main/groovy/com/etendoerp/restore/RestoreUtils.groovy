@@ -4,6 +4,9 @@ import com.etendoerp.restore.verification.VerificationHelper
 import org.gradle.api.Project
 import com.etendoerp.restore.RestoreModule as RM
 
+import com.etendoerp.conventions.ConventionNames as CN
+
+
 class RestoreUtils {
 
     static loadSourcesDestinationDir(Project project) {
@@ -84,8 +87,8 @@ class RestoreUtils {
             throw new IllegalArgumentException("The backup file: ${backupFile.absolutePath} does not exist.")
         }
 
-        if (!backupFile.absolutePath.endsWith(RestoreDecompressAll.EXTENSION)) {
-            throw new IllegalArgumentException("The backup file: ${backupFile.absolutePath} is not a '${RestoreDecompressAll.EXTENSION}' file.")
+        if (!backupFile.absolutePath.endsWith(CN.EXTENSION)) {
+            throw new IllegalArgumentException("The backup file: ${backupFile.absolutePath} is not a '${CN.EXTENSION}' file.")
         }
 
         project.ext.setProperty(RM.BACKUP_LOCATION, backupFile)
@@ -123,8 +126,8 @@ class RestoreUtils {
     static loadGradleProperties(Project project, String updateFile = null ) {
 
         // Properties already exits
-        if (project.ext.has("gradleProperties") && project.ext.get("gradleProperties") != null && updateFile == null) {
-            return project.ext.get("gradleProperties") as Map
+        if (project.ext.has(RM.GRADLE_PROPERTIES) && project.ext.get(RM.GRADLE_PROPERTIES) != null && updateFile == null) {
+            return project.ext.get(RM.GRADLE_PROPERTIES) as Map
         }
 
         def tmpMap = [:]
@@ -150,7 +153,7 @@ class RestoreUtils {
 
         project.logger.info("Gradle properties: ${tmpMap.toString()}")
 
-        project.ext.setProperty("gradleProperties", tmpMap)
+        project.ext.setProperty(RM.GRADLE_PROPERTIES, tmpMap)
         return tmpMap
     }
 
