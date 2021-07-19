@@ -1,5 +1,8 @@
-package com.etendoerp.backup
+package com.etendoerp.backup.email
 
+import com.etendoerp.backup.BackupUtils
+import com.etendoerp.backup.Logger
+import com.etendoerp.backup.mode.Mode
 import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
 
@@ -13,11 +16,28 @@ class EmailSender {
     Project project
     Logger log
 
+    final static String EMAIL_PREFIX = "EMAIL"
     final static String PYTHON_EMAIL_PATH="/home/futit/sendMail.py"
 
     EmailSender(Project project) {
         this.project = project
         this.log = Logger.getLogger(project)
+    }
+
+    /**
+     * Sends an email if the backup mode running is 'auto'.
+     * Verifies if an emails has been send to prevent sending multiples emails.
+     * @param logFile
+     * @param emailType
+     * @return
+     */
+    def sendEmailWithLog(File logFile, EmailType emailType = EmailType.ERROR) {
+        def mode = project.findProperty(BM.BACKUP_MODE)
+        // Prevent sending multiple emails
+        if (mode == Mode.AUTO.value && logFile && !project.findProperty(BM.EMAIL_IS_SENDING)) {
+            project.ext.setProperty(BM.EMAIL_IS_SENDING, true)
+            sendLogToMail(logFile, emailType)
+        }
     }
 
     def send(
@@ -78,7 +98,7 @@ class EmailSender {
         log.logToFile(LogLevel.INFO, "Email sended with 'GRADLE'", project.findProperty(BM.FILE_TO_LOG) as File)
     }
 
-    def sendPythonEmail(File logFile) {
+    def sendPythonEmail(File logFile, EmailType emailType = EmailType.ERROR) {
 
         def confProps = BackupUtils.loadConfigurationProperties(project)
         def etendoConf = BackupUtils.loadEtendoBackupConf(project)
@@ -86,14 +106,16 @@ class EmailSender {
         def stdout = new ByteArrayOutputStream()
         def stderr = new ByteArrayOutputStream()
 
-        def subject = etendoConf?.EMAIL_SUBJECT ?: "Etendo backup failed. Environment:"
-        subject = subject.concat(" ${project.name} - Context name: ${confProps?.context_name ?: "undefined"}")
+        def to = getEmailPropertyValue(emailType, EmailProperty.TO)
+        def subject = getEmailPropertyValue(emailType, EmailProperty.SUBJECT) ?: "${emailType.value} on Etendo backup."
+
+        subject = subject.concat(" Project name: ${project.name} - Context name: ${confProps?.context_name ?: "undefined"}")
 
         def pythonScriptLocation = etendoConf?.EMAIL_PYTHON_LOCATION ?: PYTHON_EMAIL_PATH
 
         def result = project.exec {
             environment "EMAIL_FROM", etendoConf?.EMAIL_FROM
-            environment "EMAIL_TO", etendoConf?.EMAIL_TO
+            environment "EMAIL_TO", to
             environment "EMAIL_SERVER",etendoConf?.EMAIL_SERVER
             environment "EMAIL_PORT", etendoConf?.EMAIL_PORT
             environment "EMAIL_TLS", etendoConf?.EMAIL_TLS
@@ -115,7 +137,7 @@ class EmailSender {
         return [result.getExitValue(), output]
     }
 
-    def sendLogToMail(File logFile) {
+    def sendLogToMail(File logFile, EmailType emailType = EmailType.ERROR) {
         try {
             // Try sending email with gradle function
             def confProps  = BackupUtils.loadConfigurationProperties(project)
@@ -128,23 +150,30 @@ class EmailSender {
             senderConf.put("tls", etendoConf?.EMAIL_TLS as String)
 
             def from    = etendoConf?.EMAIL_FROM as String
-            def to      = etendoConf?.EMAIL_TO as String
-            def subject = etendoConf?.EMAIL_SUBJECT ?: "Etendo backup failed. Environment:"
-            subject = subject.concat(" ${project.name} - Context name: ${confProps?.context_name ?: "undefined"}")
-            def cc = (etendoConf?.EMAIL_CC as String)?.split(";")
+            def to = getEmailPropertyValue(emailType, EmailProperty.TO)
+            def cc = (getEmailPropertyValue(emailType, EmailProperty.CC) as String).split(";")
+            def subject = getEmailPropertyValue(emailType, EmailProperty.SUBJECT) ?: "${emailType.value} on Etendo backup."
 
-            send(senderConf as Map, from as String, to as String, subject, subject ,"text/plain", project.file(logFile), cc)
+            subject = subject.concat(" Project name: ${project.name} - Context name: ${confProps?.context_name ?: "undefined"}")
+
+            send(senderConf as Map, from as String, to as String, subject as String, subject as String,"text/plain", project.file(logFile), cc)
         } catch (Exception e) {
             project.logger.info("Error sending email with 'GRADLE'")
             e.printStackTrace()
             project.logger.info("Sending email with python script")
-            def (exit, output) = sendPythonEmail(project.file(logFile))
+            def (exit, output) = sendPythonEmail(project.file(logFile), emailType)
             if (exit == 1) {
                 // Save email result in the logfile
                 log.logToFile(LogLevel.WARN, "Error sending email with 'GRADLE' and 'PYTHON'", project.findProperty(BM.FILE_TO_LOG) as File, e)
                 throw new IllegalStateException("Error sending email with python script: ${output}")
             }
         }
+    }
+
+    private getEmailPropertyValue(EmailType emailType, EmailProperty emailProperty) {
+        def etendoConfig = BackupUtils.loadEtendoBackupConf(project)
+        def value = "${EMAIL_PREFIX}_${emailType.value}_${emailProperty.value}"
+        return etendoConfig[value]
     }
 
 }

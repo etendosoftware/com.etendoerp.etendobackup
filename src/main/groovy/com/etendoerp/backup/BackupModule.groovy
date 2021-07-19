@@ -1,5 +1,7 @@
 package com.etendoerp.backup
 
+import com.etendoerp.backup.email.EmailSender
+import com.etendoerp.backup.email.EmailType
 import com.etendoerp.backup.mode.Mode
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -32,6 +34,8 @@ class BackupModule {
 
     final static String EMAIL_IS_SENDING = "backupEmailIsSending"
     final static String ERROR_HANDLED    = "backupErrorHandled"
+    final static String WARNING_FLAG     = "backupWarningFlag"
+    final static String BACKUP_DONE_FLAG = "backupDoneFlag"
 
     /**
      * Properties extracted from '/config' directory
@@ -61,6 +65,8 @@ class BackupModule {
 
         project.ext.set(EMAIL_IS_SENDING ,false)
         project.ext.set(ERROR_HANDLED    ,false)
+        project.ext.set(WARNING_FLAG     ,false)
+        project.ext.set(BACKUP_DONE_FLAG ,false)
 
         project.ext.set(CONFIG_PROPERTIES        ,null)
         project.ext.set(ETENDO_BACKUP_PROPERTIES ,[:])
@@ -149,6 +155,7 @@ class BackupModule {
             }
 
             doLast {
+                project.ext.setProperty(BACKUP_DONE_FLAG, true)
                 def folderName = (destinationDirectory as DirectoryProperty).get().asFile.absolutePath
                 log.logToFile(LogLevel.INFO, "Backup done: ${folderName}/${archiveFileName.get()} Created ", project.findProperty(FILE_TO_LOG) as File)
 
@@ -163,6 +170,7 @@ class BackupModule {
 
                 log.logToFile(LogLevel.INFO, "Backup Finalized", project.findProperty(FILE_TO_LOG) as File)
 
+                BackupUtils.sendFinalizedEmail(project)
                 BackupUtils.saveLogs(project)
             }
         }

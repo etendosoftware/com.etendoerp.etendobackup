@@ -47,6 +47,11 @@ class Logger {
             }
             throw e
         } finally {
+
+            if (logLevel == LogLevel.WARN) {
+                project.ext.set(BM.WARNING_FLAG, true)
+            }
+
             if (logLevel == LogLevel.ERROR && !project.findProperty(BM.ERROR_HANDLED)) {
                 project.ext.set(BM.ERROR_HANDLED, true)
                 BackupUtils.handleError(project)

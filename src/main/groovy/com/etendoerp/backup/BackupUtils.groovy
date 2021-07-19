@@ -1,5 +1,7 @@
 package com.etendoerp.backup
 
+import com.etendoerp.backup.email.EmailSender
+import com.etendoerp.backup.email.EmailType
 import com.etendoerp.backup.mode.Mode
 import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
@@ -336,7 +338,7 @@ class BackupUtils {
             def backupName = project.findProperty(BM.BACKUP_NAME)
             def finalBkpDir = project.findProperty(BM.FINAL_DIR)
 
-            if (finalBkpDir && backupName) {
+            if (finalBkpDir && backupName && !project.findProperty(BM.BACKUP_DONE_FLAG)) {
                 finalBkpDir = project.file(finalBkpDir)
                 def backupFile = project.file("${finalBkpDir.absolutePath}/${backupName}")
                 if (backupFile.exists()) {
@@ -351,12 +353,9 @@ class BackupUtils {
         } finally {
             saveLogs(project)
             def logFile = project.findProperty(BM.FILE_TO_LOG) as File
-            def mode = project.findProperty(BM.BACKUP_MODE)
-            if (mode == Mode.AUTO.value && logFile && !project.findProperty(BM.EMAIL_IS_SENDING)) {
-                project.ext.setProperty(BM.EMAIL_IS_SENDING, true)
-                EmailSender emailSender = new EmailSender(project)
-                emailSender.sendLogToMail(logFile)
-            }
+            // Send email in 'auto' backup
+            EmailSender emailSender = new EmailSender(project)
+            emailSender.sendEmailWithLog(logFile, EmailType.ERROR)
         }
     }
 
@@ -396,6 +395,36 @@ class BackupUtils {
 
         } catch (Exception e) {
             project.logger.info("Error saving the logs: ${e.getMessage()}")
+        }
+    }
+
+    /**
+     * Sends an email when the backups finalizes,
+     * only if the 'SEND_EMAIL_ON_SUCCESS' property flag is activated
+     * or there is a WARNING and the 'SEND_EMAIL_ON_WARNING' flag is set to 'yes'
+     * @param project
+     */
+    static sendFinalizedEmail(Project project) {
+        // Check if send email on WARNING or SUCCESS
+
+        def sendEmailOnWarning = project.findProperty(BM.ETENDO_BACKUP_PROPERTIES)?.SEND_EMAIL_ON_WARNING
+        def sendEmailOnSuccess = project.findProperty(BM.ETENDO_BACKUP_PROPERTIES)?.SEND_EMAIL_ON_SUCCESS
+
+        def logFile = project.file(project.findProperty(BM.FILE_TO_LOG))
+        EmailType emailType = null
+
+        if (sendEmailOnSuccess == "yes") {
+            emailType = EmailType.SUCCESS
+        }
+
+        // WARNING has priority
+        if(sendEmailOnWarning == "yes" && project.findProperty(BM.WARNING_FLAG)) {
+            emailType = EmailType.WARNING
+        }
+
+        if (emailType) {
+            EmailSender emailSender = new EmailSender(project);
+            emailSender.sendEmailWithLog(logFile, emailType)
         }
     }
 
