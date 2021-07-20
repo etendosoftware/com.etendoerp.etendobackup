@@ -25,7 +25,8 @@ class RestoreUtils {
         // Create dir if not exists
         if (!project.file(destDir).exists()) {
             def currentUser = project.findProperty(RM.CURRENT_USER)
-            createDirWithOwner(project, destDir as String, currentUser as String)
+            def currentGroup = project.findProperty(RM.CURRENT_GROUP)
+            createDirWithOwner(project, destDir as String, currentUser as String, currentGroup as String)
             project.logger.info("Sources destination dir created: ${destDir}")
         }
 
@@ -51,18 +52,20 @@ class RestoreUtils {
 
         if (!project.file(finalAttachLocation).exists()) {
             def currentUser = project.findProperty(RM.CURRENT_USER)
-            createDirWithOwner(project, finalAttachLocation as String , currentUser as String)
+            def currentGroup = project.findProperty(RM.CURRENT_GROUP)
+            createDirWithOwner(project, finalAttachLocation as String , currentUser as String, currentGroup as String)
             project.logger.info("External attachments dir created: $finalAttachLocation")
         }
 
         return finalAttachLocation
     }
 
-    static createDirWithOwner(Project project, String dir, String owner) {
+    static createDirWithOwner(Project project, String dir, String owner, String group = null) {
         CommandLine commandLine = CommandLine.getCommandLine(project)
         commandLine.runSudo(false, "mkdir -p ${dir}")
         if (owner) {
-            commandLine.runSudo(false, "chown $owner:$owner $dir")
+            def own = (group) ? "${owner}:${group}" : "${owner}:${owner}"
+            commandLine.runSudo(false, "chown $own $dir")
         }
         return dir
     }
