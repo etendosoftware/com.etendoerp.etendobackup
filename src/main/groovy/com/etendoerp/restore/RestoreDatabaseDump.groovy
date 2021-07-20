@@ -7,9 +7,6 @@ import com.etendoerp.conventions.ConventionNames as CN
 
 class RestoreDatabaseDump {
 
-    final static String DUMP_FOLDER_NAME = "db-dump"
-    final static String DUMP_NAME = "db.dump"
-
     static void load(Project project) {
 
         project.tasks.register("restoreDatabaseDump") {
