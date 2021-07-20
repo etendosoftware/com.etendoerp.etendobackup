@@ -24,13 +24,17 @@ class VerificationMessages {
         CommandLine commandLine = CommandLine.getCommandLine(project)
         def header = headerMessage(project, "USER VERIFICATION", 1)
         def (exit, output) = commandLine.run(false, "id","-u","-n")
-
         def currentUser = (output as String).replace("\n","")
+
+        (exit, output) = commandLine.run(false, "id","-g","-n", currentUser)
+        def currentGroup = (output as String).replace("\n","")
 
         header += "* The restore needs to be run with a user with SUDO access \n"
         header += "* Current user: ${currentUser}                             \n"
+        header += "* Current group: ${currentGroup}                           \n"
 
         project.ext.setProperty(RM.CURRENT_USER, currentUser)
+        project.ext.setProperty(RM.CURRENT_GROUP, currentGroup)
 
         println(header)
 

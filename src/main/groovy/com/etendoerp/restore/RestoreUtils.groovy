@@ -4,6 +4,9 @@ import com.etendoerp.restore.verification.VerificationHelper
 import org.gradle.api.Project
 import com.etendoerp.restore.RestoreModule as RM
 
+import com.etendoerp.conventions.ConventionNames as CN
+
+
 class RestoreUtils {
 
     static loadSourcesDestinationDir(Project project) {
@@ -22,7 +25,8 @@ class RestoreUtils {
         // Create dir if not exists
         if (!project.file(destDir).exists()) {
             def currentUser = project.findProperty(RM.CURRENT_USER)
-            createDirWithOwner(project, destDir as String, currentUser as String)
+            def currentGroup = project.findProperty(RM.CURRENT_GROUP)
+            createDirWithOwner(project, destDir as String, currentUser as String, currentGroup as String)
             project.logger.info("Sources destination dir created: ${destDir}")
         }
 
@@ -48,18 +52,20 @@ class RestoreUtils {
 
         if (!project.file(finalAttachLocation).exists()) {
             def currentUser = project.findProperty(RM.CURRENT_USER)
-            createDirWithOwner(project, finalAttachLocation as String , currentUser as String)
+            def currentGroup = project.findProperty(RM.CURRENT_GROUP)
+            createDirWithOwner(project, finalAttachLocation as String , currentUser as String, currentGroup as String)
             project.logger.info("External attachments dir created: $finalAttachLocation")
         }
 
         return finalAttachLocation
     }
 
-    static createDirWithOwner(Project project, String dir, String owner) {
+    static createDirWithOwner(Project project, String dir, String owner, String group = null) {
         CommandLine commandLine = CommandLine.getCommandLine(project)
         commandLine.runSudo(false, "mkdir -p ${dir}")
         if (owner) {
-            commandLine.runSudo(false, "chown $owner:$owner $dir")
+            def own = (group) ? "${owner}:${group}" : "${owner}:${owner}"
+            commandLine.runSudo(false, "chown $own $dir")
         }
         return dir
     }
@@ -84,8 +90,8 @@ class RestoreUtils {
             throw new IllegalArgumentException("The backup file: ${backupFile.absolutePath} does not exist.")
         }
 
-        if (!backupFile.absolutePath.endsWith(RestoreDecompressAll.EXTENSION)) {
-            throw new IllegalArgumentException("The backup file: ${backupFile.absolutePath} is not a '${RestoreDecompressAll.EXTENSION}' file.")
+        if (!backupFile.absolutePath.endsWith(CN.EXTENSION)) {
+            throw new IllegalArgumentException("The backup file: ${backupFile.absolutePath} is not a '${CN.EXTENSION}' file.")
         }
 
         project.ext.setProperty(RM.BACKUP_LOCATION, backupFile)
@@ -123,8 +129,8 @@ class RestoreUtils {
     static loadGradleProperties(Project project, String updateFile = null ) {
 
         // Properties already exits
-        if (project.ext.has("gradleProperties") && project.ext.get("gradleProperties") != null && updateFile == null) {
-            return project.ext.get("gradleProperties") as Map
+        if (project.ext.has(RM.GRADLE_PROPERTIES) && project.ext.get(RM.GRADLE_PROPERTIES) != null && updateFile == null) {
+            return project.ext.get(RM.GRADLE_PROPERTIES) as Map
         }
 
         def tmpMap = [:]
@@ -150,7 +156,7 @@ class RestoreUtils {
 
         project.logger.info("Gradle properties: ${tmpMap.toString()}")
 
-        project.ext.setProperty("gradleProperties", tmpMap)
+        project.ext.setProperty(RM.GRADLE_PROPERTIES, tmpMap)
         return tmpMap
     }
 

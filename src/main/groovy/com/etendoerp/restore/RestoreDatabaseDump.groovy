@@ -3,10 +3,9 @@ package com.etendoerp.restore
 import com.etendoerp.restore.verification.VerificationMessages
 import org.gradle.api.Project
 
-class RestoreDatabaseDump {
+import com.etendoerp.conventions.ConventionNames as CN
 
-    final static String DUMP_FOLDER_NAME = "db-dump"
-    final static String DUMP_NAME = "db.dump"
+class RestoreDatabaseDump {
 
     static void load(Project project) {
 
@@ -39,7 +38,7 @@ class RestoreDatabaseDump {
                     throw new IllegalArgumentException("Tmp dir: ${tmpDir.absolutePath} does not exists.")
                 }
 
-                def dumpFile = project.file("${tmpDir.absolutePath}/${DUMP_FOLDER_NAME}/${DUMP_NAME}")
+                def dumpFile = project.file("${tmpDir.absolutePath}/${CN.DUMP_TAR_NAME}/${CN.DUMP_NAME}")
 
                 if (!dumpFile.exists()) {
                     throw new IllegalArgumentException("Dump file: ${dumpFile.absolutePath} not found")

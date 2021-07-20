@@ -7,6 +7,8 @@ import org.gradle.api.tasks.StopExecutionException
 import org.gradle.api.tasks.Sync
 import com.etendoerp.restore.RestoreModule as RM
 
+import com.etendoerp.conventions.ConventionNames as CN
+
 class RestoreExternalAttachments {
 
     static externalAttachChecks(Project project) {
@@ -38,7 +40,7 @@ class RestoreExternalAttachments {
 
                 def tmpDir = RestoreUtils.loadTmpDir(project)
 
-                def attachLocation = "${tmpDir.absolutePath}/${RestoreDecompressAll.ATTACHMENTS}"
+                def attachLocation = "${tmpDir.absolutePath}/${CN.ATTACH_TAR_NAME}"
 
                 Task restExtAttach = project.tasks.named("restoreExternalAttachments").get() as Sync
 

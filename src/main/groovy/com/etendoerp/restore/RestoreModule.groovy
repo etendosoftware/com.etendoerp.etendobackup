@@ -23,6 +23,8 @@ class RestoreModule {
 
     final static String KEEP_ORIGINAL_PROPERTIES   = "restoreKeepOriginalProperties"
     final static String CURRENT_USER               = "restoreCurrentUser"
+    final static String CURRENT_GROUP              = "restoreCurrentGroup"
+    final static String GRADLE_PROPERTIES          = "restoreGradleProperties"
 
     static void load(Project project) {
 
@@ -44,6 +46,7 @@ class RestoreModule {
         project.ext.setProperty(KEEP_ORIGINAL_PROPERTIES, false)
 
         project.ext.setProperty(CURRENT_USER, null)
+        project.ext.setProperty(GRADLE_PROPERTIES, null)
 
         // Load decompress backup tasks
         RestoreDecompressBackup.load(project)

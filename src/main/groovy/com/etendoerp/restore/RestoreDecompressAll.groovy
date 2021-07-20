@@ -5,18 +5,13 @@ import com.etendoerp.restore.verification.VerificationMessages
 import groovy.io.FileType
 import org.gradle.api.Project
 
+import com.etendoerp.conventions.ConventionNames as CN
+
 class RestoreDecompressAll {
 
-    final static String SOURCES     = "sources"
-    final static String DUMP        = "db-dump"
-    final static String ATTACHMENTS = "attach"
-    final static String WEBAPP      = "webapp"
-
-    final static String EXTENSION   = ".tar.gz"
-
     final static List<String> REQUIRED_FILES = [
-            SOURCES,
-            DUMP
+            CN.SOURCES_TAR_NAME,
+            CN.DUMP_TAR_NAME
     ]
 
     static decompressFile(Project project, String fromFile, String intoDir) {
@@ -37,8 +32,8 @@ class RestoreDecompressAll {
                 def files = []
                 // Verify files
                 project.file(tmpDir.absolutePath).traverse(maxDepth: 0, type: FileType.FILES) {
-                    if (it.absolutePath.endsWith(EXTENSION)) {
-                        files.add(it.name - EXTENSION)
+                    if (it.absolutePath.endsWith(CN.EXTENSION)) {
+                        files.add(it.name - CN.EXTENSION)
                     }
                 }
 
@@ -47,28 +42,28 @@ class RestoreDecompressAll {
                         throw new IllegalArgumentException("The file: $it is required to complete the restore.")
                     }
                 }
-                project.ext.setProperty(RestoreModule.HAS_EXTERNAL_ATTACHMENTS, files.contains(ATTACHMENTS))
+                project.ext.setProperty(RestoreModule.HAS_EXTERNAL_ATTACHMENTS, files.contains(CN.ATTACH_TAR_NAME))
 
                 // SOURCES VERIFICATION
                 // Decompress sources
-                def sourcesLocation = "${tmpDir.absolutePath}/$SOURCES"
+                def sourcesLocation = "${tmpDir.absolutePath}/${CN.SOURCES_TAR_NAME}"
                 decompressFile(
                         project,
-                        sourcesLocation + EXTENSION,
+                        sourcesLocation + CN.EXTENSION,
                         sourcesLocation
                 )
-                files.remove(SOURCES)
+                files.remove(CN.SOURCES_TAR_NAME)
                 sourcesVerification(project, sourcesLocation)
 
                 // Remove 'attach' from files to prevent decompress them
                 if (!project.findProperty(RestoreModule.COPY_EXTERNALS_ATTACHMENTS)) {
-                    files.remove(ATTACHMENTS)
+                    files.remove(CN.ATTACH_TAR_NAME)
                 }
 
                 files.each {
                     decompressFile(
                             project,
-                            "${tmpDir.absolutePath}/$it$EXTENSION",
+                            "${tmpDir.absolutePath}/$it${CN.EXTENSION}",
                             "${tmpDir.absolutePath}/$it"
                     )
                 }
@@ -81,7 +76,7 @@ class RestoreDecompressAll {
     static sourcesVerification(Project project, String sourcesLocation) {
         // Load config/Openbravo.properties
         def openbravoProps = new Properties()
-        project.file("${sourcesLocation}/config/Openbravo.properties").withInputStream { openbravoProps.load(it) }
+        project.file("${sourcesLocation}/${CN.DEFAULT_CONFIG_PROPERTIES_LOCATION}").withInputStream { openbravoProps.load(it) }
         def sourcesAttachLocation = openbravoProps.getProperty("attach.path") ?: "/undefined"
         def originalSourcesDirectory = openbravoProps.getProperty("source.path", "")
 

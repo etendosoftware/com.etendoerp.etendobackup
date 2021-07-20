@@ -5,10 +5,9 @@ import org.gradle.api.Task
 import org.gradle.api.tasks.Sync
 import com.etendoerp.restore.RestoreModule as RM
 
-class RestoreSources {
+import com.etendoerp.conventions.ConventionNames as CN
 
-    final static String SOURCES_FOLDER_NAME = "sources"
-    final static String DEFAULT_ATTACH_FOLDER = "/attachments"
+class RestoreSources {
 
     // Files that the 'sources' backup folder can contain
     static List<String> originalSourceFiles = [
@@ -73,7 +72,7 @@ class RestoreSources {
 
                 def tmpDir = RestoreUtils.loadTmpDir(project)
 
-                def sourcesFile = project.file("${tmpDir.absolutePath}/${SOURCES_FOLDER_NAME}")
+                def sourcesFile = project.file("${tmpDir.absolutePath}/${CN.SOURCES_TAR_NAME}")
                 if (!sourcesFile.exists()) {
                     throw new IllegalArgumentException("The Sources folder ${sourcesFile.absolutePath} does not exists")
                 }
@@ -101,9 +100,9 @@ class RestoreSources {
                     exclude(excludedFiles)
                     // Exclude 'attachments' from copy
                     if (!copySourcesAttach) {
-                        project.logger.info("The attachments inside the Sources '${DEFAULT_ATTACH_FOLDER}'" +
+                        project.logger.info("The attachments inside the Sources '${CN.DEFAULT_ATTACH_FOLDER}'" +
                                             "${attachLocInsideSources ? " - '${attachLocInsideSources}'" : ""} will not be copied.")
-                        exclude DEFAULT_ATTACH_FOLDER
+                        exclude CN.DEFAULT_ATTACH_FOLDER
                         exclude attachLocInsideSources
                     }
                 }
@@ -116,7 +115,7 @@ class RestoreSources {
                     include(filesToKeep)
                     // Prevents deleting 'attachments'
                     if (!copySourcesAttach) {
-                        include "${DEFAULT_ATTACH_FOLDER}/**"
+                        include "${CN.DEFAULT_ATTACH_FOLDER}/**"
                         include "${attachLocInsideSources}"
                     }
                 }
@@ -130,7 +129,7 @@ class RestoreSources {
 
                 def destDir = RestoreUtils.loadSourcesDestinationDir(project) as File
                 def gradleProps = "${destDir.absolutePath}/gradle.properties"
-                def openbravoProps = "${destDir.absolutePath}/config/Openbravo.properties"
+                def openbravoProps = "${destDir.absolutePath}/${CN.DEFAULT_CONFIG_PROPERTIES_LOCATION}"
 
                 if (!keepOriginalProperties) {
                     // Copy gradle.properties
