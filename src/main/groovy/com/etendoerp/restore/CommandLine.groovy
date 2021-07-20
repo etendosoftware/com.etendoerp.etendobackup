@@ -61,6 +61,7 @@ class CommandLine {
         def password = sudoPassword
 
         def result = this.project.exec {
+            workingDir '/'
             environment(env)
             environment "HISTIGNORE", "*sudo -S*"
             executable "sh"
