@@ -134,9 +134,11 @@ class RestoreSources {
 
                 if (!keepOriginalProperties) {
                     // Copy gradle.properties
-                    project.copy {
-                        from project.file("gradle.properties")
-                        into destDir
+                    if (project.rootDir.absolutePath != destDir.absolutePath) {
+                        project.copy {
+                            from project.file("gradle.properties")
+                            into destDir
+                        }
                     }
 
                     // Update the Openbravo.properties file in the destination directory
