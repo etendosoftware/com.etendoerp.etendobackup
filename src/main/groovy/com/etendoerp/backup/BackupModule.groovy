@@ -43,7 +43,7 @@ class BackupModule {
     final static String CONFIG_PROPERTIES = "backupConfigProperties"
 
     /**
-     * Properties extracted from 'etendo-backup.conf.properties' file
+     * Properties extracted from 'backup.properties' file
      */
     final static String ETENDO_BACKUP_PROPERTIES = "backupEtendoConfigProperties"
 

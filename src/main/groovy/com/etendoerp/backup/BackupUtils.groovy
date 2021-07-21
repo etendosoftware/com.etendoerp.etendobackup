@@ -11,8 +11,8 @@ import com.etendoerp.backup.BackupModule as BM
 
 class BackupUtils {
 
-    final static String DEFAULT_USER  = "futit"
-    final static String DEFAULT_GROUP = "futit"
+    final static String DEFAULT_USER  = "undefined"
+    final static String DEFAULT_GROUP = "undefined"
 
     final static String LOG_EXTENSION = ".log"
 
@@ -101,7 +101,7 @@ class BackupUtils {
     }
 
     /**
-     * Loads the properties extracted from the 'etendo-backup.conf.properties' file.
+     * Loads the properties extracted from the 'backup.properties' file.
      * A user can customize this properties inside the file
      * @param project
      * @return

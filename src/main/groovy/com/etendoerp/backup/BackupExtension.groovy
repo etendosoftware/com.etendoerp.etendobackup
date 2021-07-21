@@ -2,9 +2,10 @@ package com.etendoerp.backup
 
 import org.gradle.api.provider.Property
 
+
 abstract class BackupPluginExtension {
 
-    final static String CONFIG_PATH = "etendo-backup.conf.properties"
+    final static String CONFIG_PATH = "config/backup.properties"
 
     abstract Property<String> getConfigPath()
 
