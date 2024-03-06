@@ -1,19 +1,21 @@
 plugins {
+    id 'java'
     id 'groovy'
     id 'java-gradle-plugin'
     id 'maven-publish'
 }
 
-def MASTER = "master"
-def DEV    = "dev"
-def PROD   = "prod"
+def MAIN = "main"
+def DEV = "dev"
+def PROD = "prod"
 
-def URL_PROD = "https://repo.futit.cloud/repository/static-public-releases"
+def URL_PROD = uri("https://maven.pkg.github.com/etendosoftware/com.etendoerp.etendobackup")
 def URL_DEV  = "https://repo.futit.cloud/repository/static-public-snapshots"
+final String PLUGIN_VERSION = "1.1.0"
 
 // Default mode
 def mode = DEV
-def pluginVersion = "1.0.0"
+def pluginVersion = PLUGIN_VERSION
 
 def gitBranch() {
     def branch = ""
@@ -24,7 +26,7 @@ def gitBranch() {
     branch
 }
 
-if (gitBranch() == MASTER) {
+if (gitBranch() == MAIN) {
     mode = PROD
 }
 if (mode == DEV) {
@@ -37,7 +39,6 @@ group 'com.etendoerp'
 version(pluginVersion)
 
 repositories {
-    jcenter()
     mavenCentral()
 }
 
@@ -45,8 +46,13 @@ publishing {
     repositories {
         maven {
             credentials {
-                username "$mavenUser"
-                password "$mavenPassword"
+                if (mode == PROD) {
+                    username "$githubUser"
+                    password "$githubToken"
+                } else {
+                    username "$nexusUser"
+                    password "$nexusPassword"
+                }
             }
             url(urlToPublish)
         }
@@ -54,10 +60,10 @@ publishing {
 }
 
 dependencies {
-    compile     gradleApi()
-    testCompile gradleTestKit()
-    testCompile 'junit:junit:4+'
-    compile 'com.sun.mail:javax.mail:1.6.0'
+    implementation gradleApi()
+    testImplementation gradleTestKit()
+    testImplementation 'junit:junit:4+'
+    implementation 'com.sun.mail:javax.mail:1.6.0'
 }
 
 gradlePlugin {
@@ -66,5 +72,50 @@ gradlePlugin {
             id = "com.etendoerp.etendobackup"
             implementationClass = "com.etendoerp.EtendoBackupPlugin"
         }
+    }
+}
+
+/**
+ * Gradle task to upgrade the version of a plugin.
+ * Supports incrementing major, minor, or patch versions.
+ * Usage: ./gradlew upgradePluginVersion -Ptype=[major|minor|patch]
+ */
+task upgradePluginVersion() {
+    final String MAJOR = 'major'
+    final String MINOR = 'minor'
+    final String PATCH = 'patch'
+    doLast {
+        def typeVersion
+        if (project.hasProperty('type')){
+            typeVersion = project.getProperty('type')
+        } else {
+            throw new GradleException("The parameter -Ptype is required")
+        }
+
+        if (typeVersion != MAJOR && typeVersion != MINOR && typeVersion != PATCH) {
+            throw new GradleException("The parameter value '${typeVersion}' is not valid, the options should be 'major', 'minor' or 'patch'")
+        }
+
+        def version = PLUGIN_VERSION.trim().split("\\.")
+        if (version.length != 3) {
+            throw new GradleException("The version must be in the format major.minor.patch")
+        }
+
+        if (typeVersion == MAJOR) {
+            version[0]++
+            version[1] = 0
+            version[2] = 0
+        } else if (typeVersion == MINOR) {
+            version[1]++
+            version[2] = 0
+        } else if (typeVersion == PATCH) {
+            version[2]++
+        }
+        def nextVersion = "${version[0]}.${version[1]}.${version[2]}"
+
+        //Rewrite build.gradle file with new value
+        def buildGradleContent = file('build.gradle').text
+        buildGradleContent = buildGradleContent.replaceAll(/PLUGIN_VERSION = \"${PLUGIN_VERSION}\"/, "PLUGIN_VERSION = \"${nextVersion}\"")
+        file('build.gradle').write(buildGradleContent)
     }
 }
