@@ -19,9 +19,6 @@ dist/
 # Log files
 *.log
 
-# Package files
-*.jar
-
 # Maven
 target/
 dist/
@@ -51,3 +48,4 @@ Thumbs.db
 *.mov
 *.wmv
 
+gradle.properties
