@@ -8,7 +8,7 @@ To use this plugin, add it as a dependency in your `build.gradle` file using the
 
 ```
 plugins {
-    id 'com.etendoerp.etendobackup' version "1.0.0"
+    id 'com.etendoerp.etendobackup' version '<version>'
 }
 ```
 
