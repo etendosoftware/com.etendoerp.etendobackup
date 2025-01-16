@@ -88,7 +88,7 @@ class BackupUtils {
             }
         }
 
-        (exit, output) = commandLine.runSudo("true")
+        (exit, output) = commandLine.run("true")
         if (exit != 0) {
             throw new IllegalArgumentException("* The user ${currentUser} has not SUDO access")
         }
@@ -199,7 +199,6 @@ class BackupUtils {
             def uuid = UUID.randomUUID().toString()
             def tmpDirPath = "${bkpTmpDir}/backup-tmp-${uuid}"
             commandLine.run(false, "mkdir","-p", tmpDirPath)
-            commandLine.run(false,"sudo","chown","${user}:${group}",tmpDirPath)
             tmpDir = project.file(tmpDirPath)
         } else {
             tmpDir = File.createTempDir()
@@ -235,10 +234,8 @@ class BackupUtils {
         def user  = etendoConf?.USER ?: DEFAULT_USER
         def group = etendoConf?.GROUP ?: DEFAULT_GROUP
 
-        commandLine.run(false,"sudo","mkdir","-p",baseBackupDir)
-        commandLine.run(false,"sudo","chown","${user}:${group}",baseBackupDir)
-        commandLine.run(false,"sudo","mkdir","-p",finalBackupDir)
-        commandLine.run(false,"sudo","chown","${user}:${group}",finalBackupDir)
+        commandLine.run(false,"mkdir","-p",baseBackupDir)
+        commandLine.run(false,"mkdir","-p",finalBackupDir)
 
         log.logToFile(LogLevel.INFO, "Backup dir: ${finalBackupDir} created", project.findProperty(BM.FILE_TO_LOG) as File)
 
@@ -382,12 +379,11 @@ class BackupUtils {
             def group = etendoConf?.GROUP ?: DEFAULT_GROUP
 
             // Create the directory where to save logs
-            commandLine.run(false,"sudo","mkdir","-p",finalLogDir)
-            commandLine.run(false,"sudo","chown","-R","${user}:${group}", "${baseDir}/logs")
+            commandLine.run(false,"mkdir","-p",finalLogDir)
 
             // Move the log
             project.logger.info("Moving ${logFile.absolutePath} into ${finalLogDir}")
-            commandLine.run(false,"sudo","mv","${logFile.absolutePath}","$finalLogDir")
+            commandLine.run(false,"mv","${logFile.absolutePath}","$finalLogDir")
 
             // Update the log file location
             def newLogFileLoc = project.file("${finalLogDir}/${logFile.name}")
