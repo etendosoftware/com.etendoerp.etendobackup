@@ -236,10 +236,13 @@ class BackupUtils {
 
         if (!new File(baseBackupDir).exists()) {
             commandLine.run(false, "mkdir", "-p", baseBackupDir)
+            log.logToFile(LogLevel.ERROR, "Failed to create base backup directory: ${baseBackupDir}", project.findProperty(BM.FILE_TO_LOG) as File)
+
         }
 
         if (!new File(finalBackupDir).exists()) {
             commandLine.run(false, "mkdir", "-p", finalBackupDir)
+            log.logToFile(LogLevel.ERROR, "Failed to create final backup directory: ${finalBackupDir}", project.findProperty(BM.FILE_TO_LOG) as File)
         }
 
         log.logToFile(LogLevel.INFO, "Backup dir: ${finalBackupDir} created", project.findProperty(BM.FILE_TO_LOG) as File)
