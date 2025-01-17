@@ -62,10 +62,8 @@ class RestoreUtils {
 
     static createDirWithOwner(Project project, String dir, String owner, String group = null) {
         CommandLine commandLine = CommandLine.getCommandLine(project)
-        commandLine.run(false, "mkdir -p ${dir}")
-        if (owner) {
-            def own = (group) ? "${owner}:${group}" : "${owner}:${owner}"
-            commandLine.run(false, "chown $own $dir")
+        if (!project.file(dir).exists()) {
+            commandLine.run(false, "mkdir -p ${dir}")
         }
         return dir
     }

@@ -234,8 +234,13 @@ class BackupUtils {
         def user  = etendoConf?.USER ?: DEFAULT_USER
         def group = etendoConf?.GROUP ?: DEFAULT_GROUP
 
-        commandLine.run(false,"mkdir","-p",baseBackupDir)
-        commandLine.run(false,"mkdir","-p",finalBackupDir)
+        if (!new File(baseBackupDir).exists()) {
+            commandLine.run(false, "mkdir", "-p", baseBackupDir)
+        }
+
+        if (!new File(finalBackupDir).exists()) {
+            commandLine.run(false, "mkdir", "-p", finalBackupDir)
+        }
 
         log.logToFile(LogLevel.INFO, "Backup dir: ${finalBackupDir} created", project.findProperty(BM.FILE_TO_LOG) as File)
 
