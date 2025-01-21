@@ -234,18 +234,25 @@ class BackupUtils {
         def user  = etendoConf?.USER ?: DEFAULT_USER
         def group = etendoConf?.GROUP ?: DEFAULT_GROUP
 
-        if (!new File(baseBackupDir).exists()) {
-            commandLine.run(false, "mkdir", "-p", baseBackupDir)
-            if (exit != 0) {
-                log.logToFile(LogLevel.ERROR, "Failed to create base backup directory: ${baseBackupDir}", project.findProperty(BM.FILE_TO_LOG) as File)
+        try {
+            File backupPath = new File(baseBackupDir)
+            if (!backupPath.exists()) {
+                String errorMsg = "Backup directory '${baseBackupDir}' does not exist. Please create it and grant the necessary permissions."
+                throw new IllegalStateException(errorMsg)
+            } else if (!backupPath.canWrite()) {
+                String errorMsg = "No write permissions on directory '${baseBackupDir}'. Please grant write permissions."
+                throw new IllegalStateException(errorMsg)
             }
-        }
-
-        if (!new File(finalBackupDir).exists()) {
-            commandLine.run(false, "mkdir", "-p", finalBackupDir)
-            if (exit != 0) {
-                log.logToFile(LogLevel.ERROR, "Failed to create final backup directory: ${finalBackupDir}", project.findProperty(BM.FILE_TO_LOG) as File)
+            
+            log.logToFile(LogLevel.INFO, "Creating backup dir: ${finalBackupDir}", project.findProperty(BM.FILE_TO_LOG) as File)
+            if (!new File(finalBackupDir).exists()) {
+                def exit = commandLine.run(false, "mkdir", "-p", finalBackupDir)
+                if (exit != 0) {
+                    throw new IllegalStateException("Failed to create final backup directory: ${finalBackupDir}")
+                }
             }
+        } catch (Exception e) {
+            throw e
         }
 
         log.logToFile(LogLevel.INFO, "Backup dir: ${finalBackupDir} created", project.findProperty(BM.FILE_TO_LOG) as File)
