@@ -53,7 +53,7 @@ class RestoreUtils {
         if (!project.file(finalAttachLocation).exists()) {
             def currentUser = project.findProperty(RM.CURRENT_USER)
             def currentGroup = project.findProperty(RM.CURRENT_GROUP)
-            createDirWithOwner(project, finalAttachLocation as String , currentUser as String, currentGroup as String)
+            createDirWithOwner(project, finalAttachLocation as String, currentUser as String, currentGroup as String)
             project.logger.info("External attachments dir created: $finalAttachLocation")
         }
 
@@ -62,10 +62,8 @@ class RestoreUtils {
 
     static createDirWithOwner(Project project, String dir, String owner, String group = null) {
         CommandLine commandLine = CommandLine.getCommandLine(project)
-        commandLine.runSudo(false, "mkdir -p ${dir}")
-        if (owner) {
-            def own = (group) ? "${owner}:${group}" : "${owner}:${owner}"
-            commandLine.runSudo(false, "chown $own $dir")
+        if (!project.file(dir).exists()) {
+            commandLine.run(false, "mkdir -p ${dir}")
         }
         return dir
     }
@@ -82,7 +80,7 @@ class RestoreUtils {
         def backupPath = project.findProperty(backupPathProp)
         if (!backupPath) {
             throw new IllegalArgumentException("You should provide the backup path.\n" +
-                                               " Ex: -P${backupPathProp}=/path/to/backup")
+                    " Ex: -P${backupPathProp}=/path/to/backup")
         }
 
         def backupFile = project.file(backupPath)
@@ -126,7 +124,7 @@ class RestoreUtils {
      * @param updateFile
      * @return
      */
-    static loadGradleProperties(Project project, String updateFile = null ) {
+    static loadGradleProperties(Project project, String updateFile = null) {
 
         // Properties already exits
         if (project.ext.has(RM.GRADLE_PROPERTIES) && project.ext.get(RM.GRADLE_PROPERTIES) != null && updateFile == null) {
@@ -146,13 +144,13 @@ class RestoreUtils {
         def gradleProps = new Properties()
         propFile.withInputStream { gradleProps.load(it) }
 
-        tmpMap.put("context_name" , gradleProps.getProperty("context.name", "etendo"))
-        tmpMap.put("db_name"      , gradleProps.getProperty("bbdd.sid", "etendo"))
-        tmpMap.put("db_port"      , gradleProps.getProperty("bbdd.port", "5432"))
-        tmpMap.put("db_user"      , gradleProps.getProperty("bbdd.user", "tad"))
-        tmpMap.put("db_pass"      , gradleProps.getProperty("bbdd.password", "tad"))
-        tmpMap.put("db_sysuser"   , gradleProps.getProperty("bbdd.systemUser", "postgres"))
-        tmpMap.put("db_syspass"   , gradleProps.getProperty("bbdd.systemPassword", "syspass"))
+        tmpMap.put("context_name", gradleProps.getProperty("context.name", "etendo"))
+        tmpMap.put("db_name", gradleProps.getProperty("bbdd.sid", "etendo"))
+        tmpMap.put("db_port", gradleProps.getProperty("bbdd.port", "5432"))
+        tmpMap.put("db_user", gradleProps.getProperty("bbdd.user", "tad"))
+        tmpMap.put("db_pass", gradleProps.getProperty("bbdd.password", "tad"))
+        tmpMap.put("db_sysuser", gradleProps.getProperty("bbdd.systemUser", "postgres"))
+        tmpMap.put("db_syspass", gradleProps.getProperty("bbdd.systemPassword", "syspass"))
 
         project.logger.info("Gradle properties: ${tmpMap.toString()}")
 
@@ -185,10 +183,10 @@ class RestoreUtils {
 
         // Load properties files
         def originProps = new Properties()
-        project.file(originPropFile).withInputStream { originProps.load(it)}
+        project.file(originPropFile).withInputStream { originProps.load(it) }
 
         def destProps = new Properties()
-        project.file(dstPropFile).withInputStream {destProps.load(it)}
+        project.file(dstPropFile).withInputStream { destProps.load(it) }
 
         project.ant.propertyfile(file: dstPropFile) {
             originProps.each {
@@ -201,9 +199,9 @@ class RestoreUtils {
 
             // Update url
             if (!originProps.containsKey("bbdd.url")) {
-                def host = originProps.getProperty("bbdd.host","localhost")
-                def port = originProps.getProperty("bbdd.port","5432")
-                entry(key:"bbdd.url", value: "jdbc:postgresql://$host:$port")
+                def host = originProps.getProperty("bbdd.host", "localhost")
+                def port = originProps.getProperty("bbdd.port", "5432")
+                entry(key: "bbdd.url", value: "jdbc:postgresql://$host:$port")
             }
 
         }
