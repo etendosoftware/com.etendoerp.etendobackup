@@ -11,7 +11,7 @@ import com.etendoerp.backup.BackupModule as BM
 
 class BackupUtils {
 
-    final static String DEFAULT_USER  = "undefined"
+    final static String DEFAULT_USER = "undefined"
     final static String DEFAULT_GROUP = "undefined"
 
     final static String LOG_EXTENSION = ".log"
@@ -29,14 +29,14 @@ class BackupUtils {
         def date = "nodate"
         def (exit, output) = commandLine.run("date", "-u", '+"%Y%m%d-%H%M-%Z"')
         if (exit == 0) {
-            date = output.replace("\"","").replace("\n","")
+            date = output.replace("\"", "").replace("\n", "")
             project.setProperty(BM.CURRENT_DATE, date)
         }
 
         // Create file to log in a selected location
         // User should have permissions to create the backup log file
         if (!project.ext.has(BM.FILE_TO_LOG) || project.ext.get(BM.FILE_TO_LOG) == null) {
-            def tmpLogLocation = (etendoConf?.EMAIL_TEMP_FILE as String).replace(LOG_EXTENSION,"")
+            def tmpLogLocation = (etendoConf?.EMAIL_TEMP_FILE as String).replace(LOG_EXTENSION, "")
             tmpLogLocation = tmpLogLocation.concat("-${date}${LOG_EXTENSION}")
             File logFile = project.file(tmpLogLocation)
             project.ext.set(BM.FILE_TO_LOG, logFile)
@@ -46,13 +46,13 @@ class BackupUtils {
         log.logToFile(LogLevel.INFO, "Configuration properties: ${confPath}", project.findProperty(BM.FILE_TO_LOG) as File)
 
         // Get private IP
-        (exit, output) = commandLine.run("hostname","-I")
+        (exit, output) = commandLine.run("hostname", "-I")
         if (exit == 0) {
-            log.logToFile(LogLevel.INFO, "Private IP: ${output.replace("\n","")}", project.findProperty(BM.FILE_TO_LOG) as File)
+            log.logToFile(LogLevel.INFO, "Private IP: ${output.replace("\n", "")}", project.findProperty(BM.FILE_TO_LOG) as File)
         }
 
         // Get public IP
-        (exit, output) = commandLine.run("wget","-qO-","ifconfig.me")
+        (exit, output) = commandLine.run("wget", "-qO-", "ifconfig.me")
         if (exit == 0) {
             log.logToFile(LogLevel.INFO, "Public IP: ${output}", project.findProperty(BM.FILE_TO_LOG) as File)
         }
@@ -77,18 +77,18 @@ class BackupUtils {
 
         def user = etendoConf?.USER ?: DEFAULT_USER
 
-        (exit, output) = commandLine.run(false, "id","-u","-n")
+        (exit, output) = commandLine.run(false, "id", "-u", "-n")
         def currentUser = "undefined"
 
         if (exit == 0) {
-            currentUser = (output as String).replace("\n","")
+            currentUser = (output as String).replace("\n", "")
             if (currentUser != user) {
                 throw new IllegalArgumentException("The current user running the program (${currentUser}) " +
                         "is not the same specified in the etendo backup config properties (${user})")
             }
         }
 
-        (exit, output) = commandLine.runSudo("true")
+        (exit, output) = commandLine.run("true")
         if (exit != 0) {
             throw new IllegalArgumentException("* The user ${currentUser} has not SUDO access")
         }
@@ -154,16 +154,16 @@ class BackupUtils {
         def opb_props = new Properties()
         confFile.withInputStream { opb_props.load(it) }
 
-        def db_url_arr   = opb_props.getProperty("bbdd.url").split(":")
+        def db_url_arr = opb_props.getProperty("bbdd.url").split(":")
 
-        tmpMap.put("db_host"      , db_url_arr[2].replace("/",""))
-        tmpMap.put("db_port"      , db_url_arr[3])
-        tmpMap.put("db_login"     , opb_props.getProperty("bbdd.user", "tad"))
-        tmpMap.put("db_pass"      , opb_props.getProperty("bbdd.password", "tad"))
-        tmpMap.put("db_name"      , opb_props.getProperty("bbdd.sid", "etendo"))
-        tmpMap.put("db_syspass"   , opb_props.getProperty("bbdd.systemPassword", "syspass"))
-        tmpMap.put("context_name" , opb_props.getProperty("context.name", "etendo"))
-        tmpMap.put("attach_path"  , opb_props.getProperty("attach.path", ""))
+        tmpMap.put("db_host", db_url_arr[2].replace("/", ""))
+        tmpMap.put("db_port", db_url_arr[3])
+        tmpMap.put("db_login", opb_props.getProperty("bbdd.user", "tad"))
+        tmpMap.put("db_pass", opb_props.getProperty("bbdd.password", "tad"))
+        tmpMap.put("db_name", opb_props.getProperty("bbdd.sid", "etendo"))
+        tmpMap.put("db_syspass", opb_props.getProperty("bbdd.systemPassword", "syspass"))
+        tmpMap.put("context_name", opb_props.getProperty("context.name", "etendo"))
+        tmpMap.put("attach_path", opb_props.getProperty("attach.path", ""))
 
         log.logToFile(LogLevel.INFO, "Configuration properties: \n" +
                 " * db_login     ${tmpMap.db_login} \n" +
@@ -192,14 +192,13 @@ class BackupUtils {
         File tmpDir
 
         def etendoConf = loadEtendoBackupConf(project)
-        def user  = etendoConf?.USER ?: DEFAULT_USER
+        def user = etendoConf?.USER ?: DEFAULT_USER
         def group = etendoConf?.GROUP ?: DEFAULT_GROUP
         def bkpTmpDir = etendoConf?.BACKUPS_TMP_DIR
         if (bkpTmpDir) {
             def uuid = UUID.randomUUID().toString()
             def tmpDirPath = "${bkpTmpDir}/backup-tmp-${uuid}"
-            commandLine.run(false, "mkdir","-p", tmpDirPath)
-            commandLine.run(false,"sudo","chown","${user}:${group}",tmpDirPath)
+            commandLine.run(false, "mkdir", "-p", tmpDirPath)
             tmpDir = project.file(tmpDirPath)
         } else {
             tmpDir = File.createTempDir()
@@ -232,13 +231,29 @@ class BackupUtils {
         log.logToFile(LogLevel.INFO, "Creating backup dir: ${finalBackupDir}", project.findProperty(BM.FILE_TO_LOG) as File)
 
         def etendoConf = loadEtendoBackupConf(project)
-        def user  = etendoConf?.USER ?: DEFAULT_USER
+        def user = etendoConf?.USER ?: DEFAULT_USER
         def group = etendoConf?.GROUP ?: DEFAULT_GROUP
 
-        commandLine.run(false,"sudo","mkdir","-p",baseBackupDir)
-        commandLine.run(false,"sudo","chown","${user}:${group}",baseBackupDir)
-        commandLine.run(false,"sudo","mkdir","-p",finalBackupDir)
-        commandLine.run(false,"sudo","chown","${user}:${group}",finalBackupDir)
+        try {
+            File backupPath = new File(baseBackupDir)
+            if (!backupPath.exists()) {
+                String errorMsg = "Backup directory '${baseBackupDir}' does not exist. Please create it and grant the necessary permissions."
+                throw new IllegalStateException(errorMsg)
+            } else if (!backupPath.canWrite()) {
+                String errorMsg = "No write permissions on directory '${baseBackupDir}'. Please grant write permissions."
+                throw new IllegalStateException(errorMsg)
+            }
+
+            log.logToFile(LogLevel.INFO, "Creating backup dir: ${finalBackupDir}", project.findProperty(BM.FILE_TO_LOG) as File)
+            if (!new File(finalBackupDir).exists()) {
+                def exit = commandLine.run(false, "mkdir", "-p", finalBackupDir)
+                if (exit != 0) {
+                    throw new IllegalStateException("Failed to create final backup directory: ${finalBackupDir}")
+                }
+            }
+        } catch (Exception e) {
+            throw e
+        }
 
         log.logToFile(LogLevel.INFO, "Backup dir: ${finalBackupDir} created", project.findProperty(BM.FILE_TO_LOG) as File)
 
@@ -255,7 +270,7 @@ class BackupUtils {
                 "backupCompressSourcesTar",
                 "backupCompressDatabaseDump",
                 "backupCompressExternalAttachments"
-            ]
+        ]
 
         if (project.hasProperty("skipSources")) {
             log.logToFile(LogLevel.INFO, "Skipping sources", project.findProperty(BM.FILE_TO_LOG) as File)
@@ -285,9 +300,9 @@ class BackupUtils {
             def rotNumToMaintain = etendoConf?.ROTATION_NUM_TO_MAINTAIN as String
 
             if (!rotNumToMaintain || !rotNumToMaintain.isInteger() || rotNumToMaintain.toInteger() <= 0) {
-                log.logToFile(LogLevel.WARN,"Rotation NOT done", project.findProperty(BM.FILE_TO_LOG) as File)
+                log.logToFile(LogLevel.WARN, "Rotation NOT done", project.findProperty(BM.FILE_TO_LOG) as File)
                 def confPath = project.extensions.getByName("backup").configPath.get()
-                log.logToFile(LogLevel.WARN,"ROTATION_NUM_TO_MAINTAIN variable in ${confPath} must be a number greater than 0.", project.findProperty(BM.FILE_TO_LOG) as File)
+                log.logToFile(LogLevel.WARN, "ROTATION_NUM_TO_MAINTAIN variable in ${confPath} must be a number greater than 0.", project.findProperty(BM.FILE_TO_LOG) as File)
                 return
             }
 
@@ -298,7 +313,7 @@ class BackupUtils {
 
             // Get list of backups
             def files = []
-            bkpFolder.traverse(maxDepth:0) {
+            bkpFolder.traverse(maxDepth: 0) {
                 files.add(it)
             }
 
@@ -310,15 +325,15 @@ class BackupUtils {
             log.logToFile(LogLevel.INFO, "Rotation - Total number of backups: ${files.size()}, backups to maintain: ${rotNumToMaintain} ", project.findProperty(BM.FILE_TO_LOG) as File)
 
             if (numFilesToDelete >= files.size()) {
-                log.logToFile(LogLevel.WARN,"Rotation NOT done", project.findProperty(BM.FILE_TO_LOG) as File)
-                log.logToFile(LogLevel.WARN,"Selected all backups to delete, something is wrong, skipping delete.", project.findProperty(BM.FILE_TO_LOG) as File)
+                log.logToFile(LogLevel.WARN, "Rotation NOT done", project.findProperty(BM.FILE_TO_LOG) as File)
+                log.logToFile(LogLevel.WARN, "Selected all backups to delete, something is wrong, skipping delete.", project.findProperty(BM.FILE_TO_LOG) as File)
                 return
             }
 
             if (numFilesToDelete >= 1) {
                 log.logToFile(LogLevel.INFO, "Rotation - Files to delete: ${numFilesToDelete}", project.findProperty(BM.FILE_TO_LOG) as File)
                 for (int i = 0; i < numFilesToDelete; i++) {
-                    log.logToFile(LogLevel.INFO,"Rotation - Deleting ${files.get(i)}", project.findProperty(BM.FILE_TO_LOG) as File)
+                    log.logToFile(LogLevel.INFO, "Rotation - Deleting ${files.get(i)}", project.findProperty(BM.FILE_TO_LOG) as File)
                     project.delete(files.get(i))
                 }
             }
@@ -378,16 +393,15 @@ class BackupUtils {
             def finalLogDir = "$baseDir/logs/$mode"
 
             def etendoConf = loadEtendoBackupConf(project)
-            def user  = etendoConf?.USER ?: DEFAULT_USER
+            def user = etendoConf?.USER ?: DEFAULT_USER
             def group = etendoConf?.GROUP ?: DEFAULT_GROUP
 
             // Create the directory where to save logs
-            commandLine.run(false,"sudo","mkdir","-p",finalLogDir)
-            commandLine.run(false,"sudo","chown","-R","${user}:${group}", "${baseDir}/logs")
+            commandLine.run(false, "mkdir", "-p", finalLogDir)
 
             // Move the log
             project.logger.info("Moving ${logFile.absolutePath} into ${finalLogDir}")
-            commandLine.run(false,"sudo","mv","${logFile.absolutePath}","$finalLogDir")
+            commandLine.run(false, "mv", "${logFile.absolutePath}", "$finalLogDir")
 
             // Update the log file location
             def newLogFileLoc = project.file("${finalLogDir}/${logFile.name}")
@@ -418,7 +432,7 @@ class BackupUtils {
         }
 
         // WARNING has priority
-        if(sendEmailOnWarning == "yes" && project.findProperty(BM.WARNING_FLAG)) {
+        if (sendEmailOnWarning == "yes" && project.findProperty(BM.WARNING_FLAG)) {
             emailType = EmailType.WARNING
         }
 
